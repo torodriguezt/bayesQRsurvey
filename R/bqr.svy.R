@@ -64,9 +64,8 @@ if (!exists("%||%"))
 #' @param burnin number of initial MCMC draws to be discarded.(default = 0)
 #' @param thin thinning parameter, i.e., keep every keepth draw (default=1).
 #' @param verbose logical flag indicating whether to print progress messages (default=TRUE).
-#' @param estimate_sigma logical flag; if \code{TRUE}, the scale parameter
-#'   \eqn{\sigma^2} is estimated (when method = "ald").
-#'   If \code{FALSE}, \eqn{\sigma^2} is fixed to 1 (default).
+#' @param estimate_sigma logical flag indicating whether to estimate the scale parameter 
+#' when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)  
 #'
 #' @details
 #' The bqr.svy function can estimate three types of models, depending on the specified method.
