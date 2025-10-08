@@ -119,7 +119,7 @@ if (!exists("%||%"))
 #'
 #' @references
 #' Nascimento, M. L. & Gonçalves, K. C. M. (2025+). A Bayesian approach to multiple-output 
-#'   quantile regression analysis under informative sampling.. *Journal of Survey Statistics and Methodology*,
+#'   quantile regression analysis under informative sampling. *Journal of Survey Statistics and Methodology*,
 #'
 #' @examples
 #' library(MASS)
