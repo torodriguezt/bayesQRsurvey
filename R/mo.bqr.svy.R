@@ -117,6 +117,10 @@ if (!exists("%||%"))
 #'   \item{estimate_sigma}{Logical flag indicating whether the scale parameter
 #'                         \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 #'
+#' @references
+#' Nascimento, M. L. & Gonçalves, K. C. M. (2025+). A Bayesian approach to multiple-output 
+#'   quantile regression analysis under informative sampling.. *Journal of Survey Statistics and Methodology*,
+#'
 #' @examples
 #' library(MASS)
 #'
