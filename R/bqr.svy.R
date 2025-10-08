@@ -69,11 +69,13 @@ if (!exists("%||%"))
 #'   If \code{FALSE}, \eqn{\sigma^2} is fixed to 1 (default).
 #'
 #' @details
-#' The bqr.svy function can estimate three types of models, depending on the specified method.
+#' The bqr.svy function can estimate three types of models, where the quantile regression 
+#' coefficients are defined at the super-population level, and their estimators are built upon 
+#' the survey weights.
 #' \itemize{
-#'   \item \code{"ald"} – asymmetric Laplace working likelihood
-#'   \item \code{"score"} – score based working likelihood function
-#'   \item \code{"approximate"} – pseudolikelihood function based on a Gaussian approximation
+#'   \item \code{"ald"} – The asymmetric Laplace distribution as working likelihood.
+#'   \item \code{"score"} – A score based likelihood function.
+#'   \item \code{"approximate"} – A pseudolikelihood function based on a Gaussian approximation.
 #' }
 #'
 #' @return An object of class \code{"bqr.svy"}, containing:

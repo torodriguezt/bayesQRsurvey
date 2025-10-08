@@ -94,6 +94,10 @@ fit_mo <- mo.bqr.svy(cbind(y1, y2) ~ x1 + x2, weights = w,
 
 plot(fit_ald, type = "trace", which = "x1", tau = 0.5)
 
+plot(fit_ald, type = "trace", which = "x2", tau = 0.5)
+
+print(fit_mo)
+
 }
 \seealso{
 \code{\link{bqr.svy}}, \code{\link{mo.bqr.svy}},
