@@ -44,7 +44,92 @@ The **bayesQRsurvey** package implements four approaches for Bayesian weighted q
 
 </div>
 
+### Model specification in `bqr.svy`
 
+The `bqr.svy` function can estimate three types of models, where the quantile regression coefficients are defined at the **super-population level**, and their estimators are built upon the **survey weights**.
+
+---
+
+#### 1. Asymmetric Laplace Distribution (method = `'ald'`)
+
+Based on a survey-weighted estimator given by:
+
+\[
+\underset{\boldsymbol{\beta}(\tau) \in \mathbb{R}^{p}}{\operatorname{argmin}}
+\sum_{i \in S} w_i \, \rho_{\tau}\!\left( y_i - \mathbf{x}_i^{\top} \boldsymbol{\beta}(\tau) \right)
+\tag{1}
+\]
+
+and using the equivalence with the Asymmetric Laplace Distribution (ALD), the likelihood function is:
+
+\[
+\mathcal{L}(\boldsymbol{\beta}(\tau), \sigma; \mathbf{y}, \mathbf{X}, \mathbf{w}) =
+\prod_{i \in S} w_i \,
+\frac{\tau (1 - \tau)}{\sigma}
+\exp \left\{
+- w_i \, \rho_{\tau}\!\left( \frac{y_i - \mathbf{x}_i^{\top} \boldsymbol{\beta}(\tau)}{\sigma} \right)
+\right\}
+\tag{2}
+\]
+
+**Prior distributions:**
+
+\[
+\boldsymbol{\beta}(\tau) \sim \mathcal{N}(\text{mean}=\text{beta\_x\_mean},\, \text{sd}=\text{beta\_x\_cov}), \quad
+\sigma \sim \text{Inv-Gamma}(\text{shape}=\text{sigma\_shape},\, \text{rate}=\text{sigma\_rate})
+\]
+
+---
+
+#### 2. Score-based methods
+
+Two alternative approaches are used, both relying on **survey-weighted estimating functions**:
+
+\[
+U_{\mathcal{S}}\!\left( \boldsymbol{\beta}(\tau) \right) =
+\sum_{i \in \mathcal{S}} w_i \, \mathbf{x}_i \, \psi_{\tau}\!\left( y_i - \mathbf{x}_i^{\top} \boldsymbol{\beta}(\tau) \right)
+\tag{3}
+\]
+
+##### (a) Score-based likelihood (method = `'score'`)
+
+\[
+\mathcal{L}(\boldsymbol{\beta}(\tau); \mathbf{y}, \mathbf{X}, \mathbf{w}) =
+C \exp \left\{
+-\frac{1}{2n} \,
+U_{\mathcal{S}}\!\left( \boldsymbol{\beta}(\tau) \right)^{\top}
+\Omega_{1}
+U_{\mathcal{S}}\!\left( \boldsymbol{\beta}(\tau) \right)
+\right\}
+\tag{4}
+\]
+
+##### (b) Gaussian pseudolikelihood approximation (method = `'approximate'`)
+
+\[
+\mathcal{L}(\boldsymbol{\beta}(\tau); \mathbf{y}, \mathbf{X}, \mathbf{w}) =
+\exp \left\{
+-\frac{1}{2} \,
+\tilde{U}_{\mathcal{S}}\!\left( \boldsymbol{\beta}(\tau) \right)^{\top}
+\Omega_{2}^{-1}
+\tilde{U}_{\mathcal{S}}\!\left( \boldsymbol{\beta}(\tau) \right)
+- \frac{1}{2} \log \!\left| (2\pi)\Omega_{2} \right|
+\right\}
+\tag{5}
+\]
+
+where
+
+\[
+\tilde{U}_{\mathcal{S}}\!\left( \boldsymbol{\beta}(\tau) \right)
+= \sum_{i \in \mathcal{S}} \tilde{w}_i \, \mathbf{x}_i \, \psi_{\tau}\!\left( y_i - \mathbf{x}_i^{\top} \boldsymbol{\beta}(\tau) \right)
+\]
+
+**Prior distribution:**
+
+\[
+\boldsymbol{\beta}(\tau) \sim \mathcal{N}(\text{mean}=\text{beta\_x\_mean},\, \text{sd}=\text{beta\_x\_cov})
+\]
 
 Also, this vignette compares the performance of **bayesQR** with the three MCMC methods implemented in **bayesQRsurvey** using a simulated dataset and the Prostate cancer dataset included in the `bayesQR` package.  
 We estimate the 25th, 50th, and 75th quantile and compare coefficient estimates across all methods.

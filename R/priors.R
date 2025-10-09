@@ -90,6 +90,10 @@ if (!exists("%||%"))
 #'                      data = data, prior = prior_general, n_dir = 10)
 #'
 #' plot(fit_ald, type = "trace", which = "x1", tau = 0.5)
+#' 
+#' plot(fit_ald, type = "trace", which = "x2", tau = 0.5)
+#' 
+#' print(fit_mo)
 #'
 #' @seealso \code{\link{bqr.svy}}, \code{\link{mo.bqr.svy}},
 #'   \code{\link{summary}}
