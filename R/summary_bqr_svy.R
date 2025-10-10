@@ -16,14 +16,14 @@ NULL
 summarise_draws_custom <- function(draws, probs = c(0.025, 0.975), ...) {
   if (!is.matrix(draws)) draws <- as.matrix(draws)
   if (is.null(colnames(draws))) colnames(draws) <- paste0("V", seq_len(ncol(draws)))
-  
+
   s <- posterior::summarize_draws(
     draws,
     "mean", "median", "sd",
     "rhat", "ess_bulk", "ess_tail",
     ~posterior::quantile2(.x, probs = probs)
   )
-  
+
   # Add lower/upper_ci when exactly two probs are provided
   if (length(probs) == 2) {
     if (all(c("q2.5", "q97.5") %in% names(s))) {
@@ -39,7 +39,7 @@ summarise_draws_custom <- function(draws, probs = c(0.025, 0.975), ...) {
       }
     }
   }
-  
+
   wanted <- c("variable","mean","median","sd","rhat","ess_bulk","ess_tail",
               "q2.5","q97.5","lower_ci","upper_ci")
   s[, intersect(wanted, names(s)), drop = FALSE]
@@ -52,7 +52,7 @@ summarise_draws_custom <- function(draws, probs = c(0.025, 0.975), ...) {
 
 #' Summary methods for bayesQRsurvey
 #'@description
-#' summary.bayesQRsurvey is an S3 method that summarizes the output of the 
+#' summary.bayesQRsurvey is an S3 method that summarizes the output of the
 #' \code{bqr.svy} or \code{mo.bqr.svy} function. For the \code{bqr.svy} the posterior mean,
 #' posterior credible interval and convergence diagnostics are calculated. For the \code{mo.bqr.svy}
 #' the iterations for convergence, the MAP and the direction are calculated.
@@ -72,7 +72,7 @@ NULL
 #' @exportS3Method summary bqr.svy
 summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 2, ...) {
   stopifnot(inherits(object, "bqr.svy"))
-  
+
   meta <- list(
     n_chains    = object$n_chains %||% 1L,
     warmup      = object$warmup   %||% 0L,
@@ -80,7 +80,7 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 2, ...) {
     accept_rate = object$accept_rate %||% NA_real_,
     runtime     = object$runtime  %||% NA_real_
   )
-  
+
   ic_by_name <- function(D, vars, probs) {
     lower <- upper <- rep(NA_real_, length(vars))
     cn <- colnames(D)
@@ -94,22 +94,22 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 2, ...) {
     }
     list(lower = lower, upper = upper)
   }
-  
+
   make_block <- function(D, tau) {
     D <- if (is.data.frame(D)) data.matrix(D) else as.matrix(D)
     storage.mode(D) <- "numeric"
     if (!nrow(D) || !ncol(D)) stop("Empty draws matrix.", call. = FALSE)
-    
+
     stats <- summarise_draws_custom(D, probs = probs)
-    
+
     coef_idx   <- stats$variable != "sigma"
     coef_stats <- stats[coef_idx, , drop = FALSE]
-    
+
     vars <- coef_stats$variable
     ic   <- ic_by_name(D, vars, probs)
     coef_stats$lower_ci <- ic$lower
     coef_stats$upper_ci <- ic$upper
-    
+
     list(
       tau          = tau,
       coef_summary = coef_stats,
@@ -120,7 +120,7 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 2, ...) {
       digits       = digits
     )
   }
-  
+
   if (is.list(object$draws)) {
     per_tau <- Map(make_block, object$draws, object$quantile)
     names(per_tau) <- paste0("tau=", formatC(object$quantile, format = "f", digits = 3))
@@ -128,7 +128,7 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 2, ...) {
     per_tau <- list(make_block(object$draws, object$quantile))
     names(per_tau) <- paste0("tau=", formatC(object$quantile, format = "f", digits = 3))
   }
-  
+
   res <- list(
     call      = object$call %||% NULL,
     method    = object$method %||% object$algorithm %||% NA_character_,
@@ -150,7 +150,7 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 2, ...) {
 summary.mo.bqr.svy <- function(object, digits = 4, ...) {
   stopifnot(inherits(object, "mo.bqr.svy"))
   `%||%` <- function(a, b) if (is.null(a)) b else a
-  
+
   one_dir <- function(dir_res, tau, k) {
     beta <- dir_res$beta
     coef_tab <- data.frame(
@@ -167,7 +167,7 @@ summary.mo.bqr.svy <- function(object, digits = 4, ...) {
       converged = isTRUE(dir_res$converged)
     )
   }
-  
+
   blocks <- list()
   for (qi in seq_along(object$quantile)) {
     tau  <- object$quantile[qi]
@@ -176,7 +176,7 @@ summary.mo.bqr.svy <- function(object, digits = 4, ...) {
       blocks[[length(blocks) + 1]] <- one_dir(dirs[[k]], tau, k)
     }
   }
-  
+
   out <- list(
     call         = object$call %||% NULL,
     algorithm    = object$algorithm %||% "em",
@@ -203,7 +203,7 @@ print.summary.bqr.svy <- function(x, ...) {
   cat("Quantiles: ",
       paste(formatC(x$quantiles, format = "f", digits = 3), collapse = ", "),
       "\n\n", sep = "")
-  
+
   acc_global <- tryCatch({
     vals <- vapply(x$per_tau, function(b) {
       a <- b$meta$accept_rate
@@ -211,25 +211,25 @@ print.summary.bqr.svy <- function(x, ...) {
     }, numeric(1))
     if (all(is.na(vals))) NA_real_ else mean(vals, na.rm = TRUE)
   }, error = function(e) NA_real_)
-  
+
   for (nm in names(x$per_tau)) {
     blk <- x$per_tau[[nm]]
     cat("== ", nm, " ==\n", sep = "")
-    
+
     acc_here <- blk$meta$accept_rate
     acc_here <- if (length(acc_here) <= 1L) as.numeric(acc_here) else
       suppressWarnings(mean(acc_here, na.rm = TRUE))
-    
+
     if (is.finite(acc_here)) {
       cat("  Acceptance rate (avg): ", round(acc_here, 3), "\n", sep = "")
     } else if (is.finite(acc_global)) {
       cat("  Acceptance rate (avg): ", round(acc_global, 3), "\n", sep = "")
     }
-    
+
     cat("  Draws: ", blk$n_draws,
         " | Warmup: ", blk$meta$warmup,
         " | Thin: ", blk$meta$thin, "\n\n", sep = "")
-    
+
     cs <- blk$coef_summary
     show_cols <- c("variable","mean","sd","rhat","ess_bulk","ess_tail","lower_ci","upper_ci")
     show_cols <- intersect(show_cols, colnames(cs))
@@ -253,21 +253,21 @@ print.summary.bqr.svy <- function(x, ...) {
 print.summary.mo.bqr.svy <- function(x, ...) {
   stopifnot(inherits(x, "summary.mo.bqr.svy"))
   dig <- x$digits
-  
+
   cat("Bayesian Quantile Regression (EM algorithm)\n")
   cat("--------------------------------------------\n")
   qs <- paste(formatC(x$quantiles, format = "f", digits = 3), collapse = ", ")
   cat("Quantile", if (length(x$quantiles) > 1) "s" else "", ": tau = ", qs, "\n", sep = "")
   cat("Posterior mode estimates (MAP)\n")
   cat("Algorithm: EM\n\n", sep = "")
-  
+
   # Fixed: robust ordering by tau, then direction id
   ord <- order(
     vapply(x$blocks, function(b) b$tau,    numeric(1)),
     vapply(x$blocks, function(b) b$dir_id, numeric(1))
   )
   blocks <- x$blocks[ord]
-  
+
   for (b in blocks) {
     cat("Quantile: tau = ", formatC(b$tau, format = "f", digits = 3),
         "   |   Direction ", b$dir_id, "\n", sep = "")
@@ -287,15 +287,15 @@ print.summary.mo.bqr.svy <- function(x, ...) {
           if (isTRUE(b$converged)) "converged" else "not converged",
           "\n", sep = "")
     }
-    
+
     cat("\nCoefficients (posterior mode / MAP):\n")
     tab <- b$coef_tab
     tab$MAP <- ifelse(is.finite(tab$MAP), round(tab$MAP, dig), tab$MAP)
     print(tab, row.names = FALSE)
-    
+
     cat("\nScale sigma: ", round(b$sigma, dig), " (posterior mode)\n\n", sep = "")
   }
-  
+
   invisible(x)
 }
 
@@ -328,7 +328,7 @@ print.summary.mo.bqr.svy <- function(x, ...) {
   } else {
     stop("Unknown summary object class: ", paste(class(s), collapse = ", "))
   }
-  
+
   wanted <- c("variable","mean","sd","rhat","ess_bulk","ess_tail","lower_ci","upper_ci")
   miss <- setdiff(wanted, names(df))
   for (nm in miss) df[[nm]] <- NA_real_
@@ -344,9 +344,9 @@ summary.list <- function(object, ..., methods = NULL, target_tau = 0.5, digits =
   if (!length(object) || !all(vapply(object, is_supported, logical(1)))) {
     return(NextMethod())
   }
-  
+
   smry <- lapply(object, function(f) summary(f, ...))
-  
+
   if (is.null(methods)) {
     methods <- vapply(object, function(f)
       (f$method %||% class(f)[1]) %||% "model", character(1))
@@ -354,16 +354,16 @@ summary.list <- function(object, ..., methods = NULL, target_tau = 0.5, digits =
   if (length(methods) != length(smry)) {
     stop("'methods' must be NULL or have the same length as 'object'.")
   }
-  
+
   tidied <- Map(function(s, lab) {
     df <- ..tidy_bayesQRsurvey_summary(s, target_tau = target_tau)
     df$Method <- lab
     df
   }, smry, methods)
-  
+
   table <- do.call(rbind, tidied)
   table <- table[, c("Method", setdiff(names(table), "Method")), drop = FALSE]
-  
+
   out <- list(
     table      = table,
     target_tau = target_tau,
@@ -382,15 +382,22 @@ summary.list <- function(object, ..., methods = NULL, target_tau = 0.5, digits =
 #' Print methods for bayesQRsurvey model objects
 #'
 #' @description
-#' \code{print.bayesQRsurvey} is an S3 method that prints the content of an S3 object of class 
+#' \code{print.bayesQRsurvey} is an S3 method that prints the content of an S3 object of class
 #' \code{bqr.svy} or \code{mo.bqr.svy} to the console.
+#'
+#' @param x An object of class \code{"bqr.svy"} or \code{"mo.bqr.svy"},
+#'   returned by \code{\link{bqr.svy}} or \code{\link{mo.bqr.svy}}.
+#' @param digits Integer specifying the number of decimal places to print. Defaults to \code{3}.
+#' @param max_rows Optional integer indicating the maximum number of coefficient rows
+#'   to display for each quantile. If \code{NULL}, all rows are printed (only used in \code{print.mo.bqr.svy}).
+#' @param ... Additional arguments that are passed to the generic \code{print()} function.
 #'
 #' @name print.bayesQRsurvey
 #' @docType methods
 #'
 #' @examples
 #' set.seed(123)
-#' N    <- 10000 
+#' N    <- 10000
 #' x1_p <- runif(N, -1, 1)
 #' x2_p <- runif(N, -1, 1)
 #' y_p  <- 2 + 1.5 * x1_p - 0.8 * x2_p + rnorm(N)
@@ -401,11 +408,11 @@ summary.list <- function(object, ..., methods = NULL, target_tau = 0.5, digits =
 #' p_aux <- 1 / (1 + exp(2.5 - 0.5 * z_aux))
 #' s_ind <- sample(1:N, n, replace = FALSE, prob = p_aux)
 #' y_s   <- y_p[s_ind]
-#' x1_s  <- x1_p[s_ind]  
-#' x2_s  <- x2_p[s_ind]  
+#' x1_s  <- x1_p[s_ind]
+#' x2_s  <- x2_p[s_ind]
 #' w     <- 1 / p_aux[s_ind]
 #' data  <- data.frame(y = y_s, x1 = x1_s, x2 = x2_s, w = w)
-#' 
+#'
 #' # Fit a model
 #' fit1 <- bqr.svy(y ~ x1 + x2, weights = w, data = data, niter = 2000, burnin = 500, thin = 2)
 #'
@@ -423,20 +430,20 @@ print.bqr.svy <- function(x, digits = 3, ...) {
                           collapse = " "), "\n")
   cat("Formula  :", deparse(x$formula), "\n")
   if (!is.null(x$runtime)) cat("Runtime  :", round(x$runtime, 3), "sec\n")
-  
+
   cat("\nCoefficients (posterior means):\n")
   print(round(x$beta, digits))
-  
+
   # ---- Scale (sigma) only for ALD ----
   if (identical(x$method, "ald")) {
     cat("\nScale (sigma):\n")
-    
+
     # 1) Determinar si se estimó sigma (flag del objeto)
     est_flag <- isTRUE(x$estimate_sigma)
-    
+
     # 2) Etiquetas de tau
     tau_labs <- paste0("tau=", formatC(x$quantile, digits = 3, format = "f"))
-    
+
     # 3) Extraer un punto (media posterior) de sigma por cuantil si hay draws
     make_point <- function(m) {
       if (is.matrix(m) && "sigma" %in% colnames(m)) {
@@ -445,7 +452,7 @@ print.bqr.svy <- function(x, digits = 3, ...) {
         NA_real_
       }
     }
-    
+
     # Construir vector de sigmas por tau (o NA si no disponible)
     sig_vec <- rep(NA_real_, length(x$quantile))
     if (is.matrix(x$draws) && length(x$quantile) == 1) {
@@ -453,7 +460,7 @@ print.bqr.svy <- function(x, digits = 3, ...) {
     } else if (is.list(x$draws) && length(x$draws) == length(x$quantile)) {
       sig_vec <- vapply(x$draws, make_point, numeric(1))
     }
-    
+
     # 4) Imprimir según fijo/estimado
     if (isFALSE(est_flag)) {
       cat("  (sigma fixed at 1 by default)\n")
@@ -471,7 +478,7 @@ print.bqr.svy <- function(x, digits = 3, ...) {
       }
     }
   }
-  
+
   # ---- Acceptance rate ----
   if (!is.null(x$accept_rate)) {
     if (is.numeric(x$accept_rate) && length(x$accept_rate) == 1L) {
@@ -481,7 +488,7 @@ print.bqr.svy <- function(x, digits = 3, ...) {
       print(round(x$accept_rate, 3))
     }
   }
-  
+
   invisible(x)
 }
 
@@ -522,7 +529,7 @@ print.mo.bqr.svy <- function(x, digits = 3, max_rows = NULL, ...) {
     cat("N x d     :", x$n_obs, "x", x$response_dim, "\n")
   }
   cat("\n")
-  
+
   # Coefficients matrices per tau
   is_new_structure <- is.list(x$coefficients) && all(vapply(x$coefficients, is.matrix, logical(1)))
   if (!is_new_structure) {
@@ -549,7 +556,7 @@ print.mo.bqr.svy <- function(x, digits = 3, max_rows = NULL, ...) {
       }
     }
   }
-  
+
   # Sigma (point estimates) by tau & direction, using the extractor
   cat("\nScale (sigma) by quantile and direction:\n")
   sig <- sigma.mo.bqr.svy(x)
@@ -565,13 +572,13 @@ print.mo.bqr.svy <- function(x, digits = 3, max_rows = NULL, ...) {
       cat("   ", paste(out, collapse = ", "), "\n", sep = "")
     }
   }
-  
+
   # Note
   if (!is.null(x$estimate_sigma)) {
     if (isFALSE(x$estimate_sigma)) {
       cat("\nNote: sigma is fixed at 1.\n")
     }
   }
-  
+
   invisible(x)
 }

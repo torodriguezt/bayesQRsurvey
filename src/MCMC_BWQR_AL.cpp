@@ -9,7 +9,6 @@
 using namespace Rcpp;
 using namespace arma;
 
-// -------- Inverse-Gaussian sampler via Normal method --------
 inline double rinvgauss(double mu, double lambda) {
   const double z = R::rnorm(0.0, 1.0);
   const double y = z * z;
@@ -19,9 +18,7 @@ inline double rinvgauss(double mu, double lambda) {
   return (u <= mu / (mu + x1)) ? x1 : (mu * mu / x1);
 }
 
-// -------- Draw beta | (v, sigma) --------
-// Σ = ( B_inv + (1/(δ² σ)) X' diag(w/v) X )^{-1}
-// μ = Σ [ B_inv b_mean + (1/(δ² σ)) X' diag(w/v) (y - θ v) ]
+
 static arma::vec draw_beta(
     const arma::mat& X,
     const arma::vec& w,
@@ -67,9 +64,7 @@ static arma::vec draw_beta(
   return mu + L * arma::randn<arma::vec>(X.n_cols);
 }
 
-// -------- Draw sigma | (beta, v) --------
-// α = c0 + 1.5 n
-// β = C0 + sum(w v) + [ (w ⊙ r) / v ]' r / (2 τ²), r = y - Xβ - θ v
+
 inline double draw_sigma(
     const arma::mat& X,
     const arma::vec& w,
@@ -90,9 +85,7 @@ inline double draw_sigma(
   return 1.0 / R::rgamma(alpha1, 1.0 / beta1);
 }
 
-// -------- Update v | (beta, sigma) --------
-// v_i ~ GIG(λ=1/2, χ = w_i (y_i - x_i'β)^2 / (δ² σ), ψ = w_i (2/σ + θ²/(δ² σ)))
-// Para λ=1/2, GIG ≡ IG(μ = sqrt(χ/ψ), λ = sqrt(χ ψ))
+
 static void update_v(
     arma::vec& v,
     const arma::mat& X,
@@ -128,7 +121,7 @@ Rcpp::List _mcmc_bwqr_al_cpp(
     Rcpp::Nullable<Rcpp::NumericMatrix> B_prior_prec = R_NilValue,
     double c0 = 0.001,
     double C0 = 0.001,
-    int print_progress = 1000,   // si >0, habilita barra de progreso
+    int print_progress = 1000,
     Rcpp::Nullable<Rcpp::NumericVector> fix_sigma = R_NilValue
 ) {
 
@@ -144,11 +137,10 @@ Rcpp::List _mcmc_bwqr_al_cpp(
   if ((int)b_mean.n_elem != p)
     stop("b_prior_mean must have length equal to ncol(X).");
   arma::mat B_prec = B_prior_prec.isNotNull() ?
-    Rcpp::as<arma::mat>(B_prior_prec) : (arma::eye<arma::mat>(p, p) / 1000.0); // precision = 1/1000 => cov ≈ 1000 I
+    Rcpp::as<arma::mat>(B_prior_prec) : (arma::eye<arma::mat>(p, p) / 1000.0);
   if ((int)B_prec.n_rows != p || (int)B_prec.n_cols != p)
     stop("B_prior_prec must be a p x p matrix.");
 
-  // --- Manejo de sigma fija (si se provee)
   bool use_fixed_sigma = false;
   double sigma_fixed_val = 1.0;
   if (fix_sigma.isNotNull()) {
@@ -162,7 +154,6 @@ Rcpp::List _mcmc_bwqr_al_cpp(
   arma::mat beta_chain(n_mcmc, p, arma::fill::zeros);
   arma::vec sigma_chain(n_mcmc, arma::fill::zeros);
 
-  // Inicialización
   beta_chain.row(0) = arma::solve(X, y).t();
   sigma_chain[0] = use_fixed_sigma ? sigma_fixed_val : 1.0;
   arma::vec v = arma::randg<arma::vec>(n, arma::distr_param(2.0, 1.0));
@@ -171,15 +162,13 @@ Rcpp::List _mcmc_bwqr_al_cpp(
   const double theta  = (1.0 - 2.0 * tau) / (tau * (1.0 - tau));
   const double tau2   = delta2;
 
-  // --- Progreso: barra estética cada 10% ---
   const int bar_width = 40;
   int last_decile = -1;
 
   for (int k = 1; k < n_mcmc; ++k) {
-    // Barra de progreso (10%, 20%, ..., 100%) en una sola línea
     if (print_progress > 0) {
-      double perc = 100.0 * (k + 0.0) / (n_mcmc - 1.0);   // k va de 1 .. n_mcmc-1
-      int decile = ((int)std::floor(perc)) / 10 * 10;     // 0,10,20,...,100
+      double perc = 100.0 * (k + 0.0) / (n_mcmc - 1.0);
+      int decile = ((int)std::floor(perc)) / 10 * 10;
       if (decile >= 10 && decile <= 100 && decile > last_decile) {
         int filled = (int)std::round(bar_width * perc / 100.0);
         Rprintf("\r[");
@@ -197,13 +186,12 @@ Rcpp::List _mcmc_bwqr_al_cpp(
     update_v(v, X, w, beta_k, y, delta2, theta, sigma_chain[k - 1]);
 
     if (use_fixed_sigma) {
-      sigma_chain[k] = sigma_fixed_val;   // mantener fija
+      sigma_chain[k] = sigma_fixed_val;
     } else {
       sigma_chain[k] = draw_sigma(X, w, beta_k, v, y, tau2, theta, c0, C0);
     }
   }
 
-  // Cierre limpio de la barra: fuerza 100% y salto de línea
   if (print_progress > 0) {
     Rprintf("\r[");
     for (int j = 0; j < bar_width; ++j) Rprintf("=");
@@ -211,7 +199,6 @@ Rcpp::List _mcmc_bwqr_al_cpp(
     R_FlushConsole();
   }
 
-  // Guardar draws post-burnin cada 'thin' (índices 0-based)
   arma::uvec keep = arma::regspace<arma::uvec>(burnin, thin, n_mcmc - 1);
   const int M = keep.n_elem;
 

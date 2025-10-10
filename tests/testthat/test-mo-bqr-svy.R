@@ -10,7 +10,7 @@ test_that("mo.bqr.svy basic functionality works", {
 
   # Test multiple quantile regression
   quantiles <- c(0.25, 0.5, 0.75)
-  fit <- mo.bqr.svy(y ~ x, data = data, quantile = quantiles, n_iter = 1500)
+  fit <- mo.bqr.svy(y ~ x, data = data, quantile = quantiles, max_iter = 1500)
 
   # Test basic structure
   expect_s3_class(fit, "mo.bqr.svy")
@@ -54,13 +54,13 @@ test_that("mo.bqr.svy handles different numbers of quantiles", {
   data <- data.frame(x = x, y = y)
 
   # Test with 2 quantiles
-  fit_2 <- mo.bqr.svy(y ~ x, data = data, quantile = c(0.3, 0.7), n_iter = 12)
+  fit_2 <- mo.bqr.svy(y ~ x, data = data, quantile = c(0.3, 0.7), max_iter = 1500)
   expect_s3_class(fit_2, "mo.bqr.svy")
   expect_equal(length(fit_2$fit), 2)
 
   # Test with 5 quantiles
   fit_5 <- mo.bqr.svy(y ~ x, data = data,
-                      quantile = c(0.1, 0.25, 0.5, 0.75, 0.9), n_iter = 12)
+                      quantile = c(0.1, 0.25, 0.5, 0.75, 0.9), max_iter = 1500)
   expect_s3_class(fit_5, "mo.bqr.svy")
   expect_equal(length(fit_5$fit), 5)
 })
@@ -75,7 +75,7 @@ test_that("mo.bqr.svy input validation", {
   expect_error(mo.bqr.svy(y ~ x, data = data, quantile = c()))  # empty
 
   # Test unsorted quantiles
-  fit <- mo.bqr.svy(y ~ x, data = data, quantile = c(0.7, 0.3, 0.5), n_iter = 10)
+  fit <- mo.bqr.svy(y ~ x, data = data, quantile = c(0.7, 0.3, 0.5), max_iter = 1500)
   expect_equal(fit$quantile, c(0.3, 0.5, 0.7))  # Should be sorted
 })
 

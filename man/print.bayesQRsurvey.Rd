@@ -11,13 +11,24 @@
 
 \method{print}{mo.bqr.svy}(x, digits = 3, max_rows = NULL, ...)
 }
+\arguments{
+\item{x}{An object of class \code{"bqr.svy"} or \code{"mo.bqr.svy"},
+returned by \code{\link{bqr.svy}} or \code{\link{mo.bqr.svy}}.}
+
+\item{digits}{Integer specifying the number of decimal places to print. Defaults to \code{3}.}
+
+\item{...}{Additional arguments that are passed to the generic \code{print()} function.}
+
+\item{max_rows}{Optional integer indicating the maximum number of coefficient rows
+to display for each quantile. If \code{NULL}, all rows are printed (only used in \code{print.mo.bqr.svy}).}
+}
 \description{
 \code{print.bayesQRsurvey} is an S3 method that prints the content of an S3 object of class
 \code{bqr.svy} or \code{mo.bqr.svy} to the console.
 }
 \examples{
 set.seed(123)
-N    <- 10000 
+N    <- 10000
 x1_p <- runif(N, -1, 1)
 x2_p <- runif(N, -1, 1)
 y_p  <- 2 + 1.5 * x1_p - 0.8 * x2_p + rnorm(N)
@@ -28,8 +39,8 @@ z_aux <- rnorm(N, mean = 1 + y_p, sd=.5)
 p_aux <- 1 / (1 + exp(2.5 - 0.5 * z_aux))
 s_ind <- sample(1:N, n, replace = FALSE, prob = p_aux)
 y_s   <- y_p[s_ind]
-x1_s  <- x1_p[s_ind]  
-x2_s  <- x2_p[s_ind]  
+x1_s  <- x1_p[s_ind]
+x2_s  <- x2_p[s_ind]
 w     <- 1 / p_aux[s_ind]
 data  <- data.frame(y = y_s, x1 = x1_s, x2 = x2_s, w = w)
 

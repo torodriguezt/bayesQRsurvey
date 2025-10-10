@@ -4,9 +4,19 @@
 \alias{bqr.svy}
 \title{Bayesian quantile regression for complex survey data}
 \usage{
-bqr.svy(formula, weights = NULL, data = NULL, quantile = 0.5,
-  method = "ald", prior = NULL, niter = 50000, burnin = 0, thin = 1,
-  verbose = TRUE, estimate_sigma = FALSE)
+bqr.svy(
+  formula,
+  weights = NULL,
+  data = NULL,
+  quantile = 0.5,
+  method = c("ald", "score", "approximate"),
+  prior = NULL,
+  niter = 50000,
+  burnin = 0,
+  thin = 1,
+  verbose = TRUE,
+  estimate_sigma = FALSE
+)
 }
 \arguments{
 \item{formula}{a symbolic description of the model to be fit.}
@@ -29,9 +39,8 @@ bqr.svy(formula, weights = NULL, data = NULL, quantile = 0.5,
 
 \item{verbose}{logical flag indicating whether to print progress messages (default=TRUE).}
 
-\item{estimate_sigma}{logical flag; if \code{TRUE}, the scale parameter
-\eqn{\sigma^2} is estimated (when method = "ald").
-If \code{FALSE}, \eqn{\sigma^2} is fixed to 1 (default).}
+\item{estimate_sigma}{logical flag indicating whether to estimate the scale parameter
+when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)}
 }
 \value{
 An object of class \code{"bqr.svy"}, containing:
@@ -98,9 +107,10 @@ fit2 <- bqr.svy(y ~ x1 + x2, weights = w, data = data, prior = prior)
 fit_score  <- bqr.svy(y ~ x1 + x2, weights = w, data = data, method = "score")
 fit_approx <- bqr.svy(y ~ x1 + x2, weights = w, data = data, method = "approximate")
 
+
 }
 \references{
-Nascimento, M. L. & Gonçalves, K. C. M. (2024). Bayesian Quantile Regression Models
+Nascimento, M. L. & Gon\enc{c}{c}alves, K. C. M. (2024). Bayesian Quantile Regression Models
 for Complex Survey Data Under Informative Sampling. \emph{Journal of Survey Statistics and Methodology},
 12(4), 1105–1130.
 }

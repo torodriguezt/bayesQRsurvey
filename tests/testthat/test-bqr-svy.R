@@ -10,7 +10,7 @@ test_that("bqr.svy basic functionality works", {
   w <- rep(1, n)  # equal weights
 
   # Test basic single quantile regression
-  fit <- bqr.svy(y ~ x, data = data, quantile = 0.5, n_iter = 20)  # Few iterations for speed
+  fit <- bqr.svy(y ~ x, data = data, quantile = 0.5, niter = 2000)  # Few iterations for speed
 
   # Test basic structure
   expect_s3_class(fit, "bqr.svy")
@@ -27,11 +27,11 @@ test_that("bqr.svy basic functionality works", {
   expect_true(all(is.finite(fit$beta)))
 
   # Test different quantiles
-  fit_25 <- bqr.svy(y ~ x, data = data, quantile = 0.25, n_iter = 20)
+  fit_25 <- bqr.svy(y ~ x, data = data, quantile = 0.25, niter = 2000)
   expect_equal(fit_25$quantile, 0.25)
   expect_true(all(is.finite(fit_25$beta)))
 
-  fit_75 <- bqr.svy(y ~ x, data = data, quantile = 0.75, n_iter = 20)
+  fit_75 <- bqr.svy(y ~ x, data = data, quantile = 0.75, niter = 2000)
   expect_equal(fit_75$quantile, 0.75)
   expect_true(all(is.finite(fit_75$beta)))
 })
@@ -45,13 +45,13 @@ test_that("bqr.svy handles edge cases", {
   y <- x + rnorm(n, 0, 0.1)
   data <- data.frame(x = x, y = y)
 
-  fit <- bqr.svy(y ~ x, data = data, quantile = 0.5, n_iter = 15)
+  fit <- bqr.svy(y ~ x, data = data, quantile = 0.5, niter = 2000)
   expect_s3_class(fit, "bqr.svy")
   expect_true(all(is.finite(fit$beta)))
 
   # Test with weights
   w <- runif(n, 0.5, 2)
-  fit_w <- bqr.svy(y ~ x, data = data, weights = w, quantile = 0.5, n_iter = 15)
+  fit_w <- bqr.svy(y ~ x, data = data, weights = w, quantile = 0.5, niter = 2000)
   expect_s3_class(fit_w, "bqr.svy")
   expect_true(all(is.finite(fit_w$beta)))
 })

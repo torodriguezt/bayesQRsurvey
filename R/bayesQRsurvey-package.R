@@ -1,6 +1,7 @@
-#' tauBayesW: Bayesian Weighted Quantile Regression with EM and MCMC Algorithm
+#' bayesQRsurvey: Bayesian Weighted Quantile Regression for complex survey designs
+#' with EM and MCMC Algorithm
 #'
-#' The tauBayesW package provides Bayesian quantile regression methods for complex
+#' The bayesQRsurvey package provides Bayesian quantile regression methods for complex
 #' survey designs with two main functions:
 #'
 #' \itemize{
@@ -12,14 +13,15 @@
 #' \describe{
 #'   \item{\code{\link{bqr.svy}}}{Fits Bayesian quantile regression for a single quantile using MCMC methods (ALD, Score, Approximate)}
 #'   \item{\code{\link{mo.bqr.svy}}}{Fits Bayesian quantile regression for multiple quantiles using EM algorithm}
-#'   \item{\code{\link{plot_quantile_1D}}}{Unified visualization function for 1D quantile regression (works with both bqr.svy and mo.bqr.svy)}
-#'   \item{\code{\link{plot.bqr.svy}}}{Standard plot method for bqr.svy objects}
+#'   \item{\code{\link{plot}}}{Standard plot method for bqr.svy objects}
 #'   \item{\code{\link{summary}}}{Unified summary method for all tauBayesW model objects}
 #'   \item{\code{\link{prior}}}{Unified interface for creating prior distributions}
 #' }
 #'
 #' @section MCMC Methods:
-#' The package implements three MCMC methods for single quantile estimation:
+#' The bqr.svy function can estimate three types of models, where the quantile regression
+#' coefficients are defined at the super-population level, and their estimators are
+#' built upon the survey weights.:
 #' \itemize{
 #'   \item \strong{ALD (Asymmetric Laplace Distribution)}: Uses asymmetric Laplace likelihood
 #'   \item \strong{Score}: Uses score-based approach
@@ -27,9 +29,8 @@
 #' }
 #'
 #' @section EM Algorithm:
-#' The multiple output function uses an Expectation-Maximization algorithm
-#' based on the asymmetric Laplace distribution for efficient estimation
-#' of multiple quantiles simultaneously.
+#' Implements a Bayesian approach to multiple-output quantile regression for complex
+#' survey data analysis.
 #'
 #' @references
 #' Yu, K. and Moyeed, R. A. (2001). Bayesian quantile regression.

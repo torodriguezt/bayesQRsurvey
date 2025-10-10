@@ -44,8 +44,8 @@ and \eqn{K} indicates indicates the number of directions.}
 
 \item{verbose}{logical flag indicating whether to print progress messages (default=FALSE).}
 
-\item{estimate_sigma}{logical flag; if \code{TRUE}, the scale parameter
-\eqn{\sigma^2} is estimated by EM. If \code{FALSE}, \eqn{\sigma^2} is fixed to 1 (default).}
+\item{estimate_sigma}{logical flag indicating whether to estimate the scale parameter
+when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)}
 }
 \value{
 An object of class \code{"mo.bqr.svy"} containing:
@@ -103,4 +103,8 @@ fit1 <- mo.bqr.svy(cbind(y1, y2) ~ x1, weights = w, data = data_s, quantile = c(
 # Basic usage with default priors when n_dir is given
 fit2 <- mo.bqr.svy(cbind(y1, y2) ~ x1, weights = w, data = data_s, quantile = c(0.1, 0.2), n_dir=2)
 
+}
+\references{
+Nascimento, M. L. & \if{latex}{Gon\c{c}alves}{Gon&ccedil;alves}, K. C. M. (2025+). A Bayesian approach to multiple-output
+quantile regression analysis under informative sampling. \emph{Journal of Survey Statistics and Methodology},
 }

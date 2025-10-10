@@ -17,13 +17,7 @@ inline arma::vec rmvnorm(const arma::vec& m, const arma::mat& L) {
   return m + L * randn<vec>(m.n_elem);
 }
 
-/*
- * log_post: prior Normal(b0, B_inv^{-1}) + "approximate" basado en score
- * s_tau(β) = X' [ w ⊙ (τ - 1{y - Xβ < 0}) ]
- * Var(s_tau) ≈ τ(1-τ) X' diag(w) X    (manejo de pesos correcto)
- * Usamos:  ℓ(β) ∝ -0.5 * λ * s' Var^{-1} s  con λ = sum(w)
- *          + constante normalización de N(0, Var/λ)
- */
+
 static double log_post(const arma::vec& beta,
                        const arma::vec& b0,
                        const arma::mat& B_inv,
@@ -38,18 +32,16 @@ static double log_post(const arma::vec& beta,
   const double ridge = 1e-8;
 
   const int p = beta.n_elem;
-  const double lambda = arma::accu(w);     // tamaño efectivo ~ n si w=1
+  const double lambda = arma::accu(w);
 
   // Prior normal
   arma::vec diff = beta - b0;
   double lp = -0.5 * dot(diff, B_inv * diff);
 
-  // Score en el punto β
   arma::vec res = y - X * beta;
-  arma::vec ind = tau - arma::conv_to<arma::vec>::from(res < 0); // τ - 1{r<0}
-  arma::vec s_tau = X.t() * (w % ind);                           // X' (w ⊙ ind)
+  arma::vec ind = tau - arma::conv_to<arma::vec>::from(res < 0);
+  arma::vec s_tau = X.t() * (w % ind);
 
-  // Var(score) ≈ τ(1-τ) X' diag(w) X  (independiente de β)
   bool w_all_one = arma::approx_equal(w, arma::ones<arma::vec>(w.n_elem), "absdiff", 1e-12);
   if (w_all_one) {
     wcA = tau * (1.0 - tau) * (X.t() * X);
@@ -59,14 +51,12 @@ static double log_post(const arma::vec& beta,
   }
   wcA.diag() += ridge; // SPD
 
-  // wc = Var^{-1}(score)
   bool ok = arma::inv_sympd(wc, wcA);
   if (!ok) wc = arma::pinv(wcA, 1e-12);
 
   // log |Var|
   double ld = arma::log_det_sympd(wcA);
 
-  // Término cuadrático (concentración con λ) y normalización N(0, Var/λ)
   double quad = dot(s_tau, wc * s_tau);
   lp += -0.5 * lambda * quad
         - 0.5 * ( p * std::log(2.0 * PI) + ld - p * std::log(lambda) );
@@ -109,11 +99,9 @@ Rcpp::List _mcmc_bwqr_ap_cpp(const arma::vec& y,
     if (B_inv.n_rows != p || B_inv.n_cols != p)
       stop("B_prior_prec must be a pxp matrix");
   } else {
-    B_inv = arma::eye<mat>(p, p) / 100.0; // prior débil
+    B_inv = arma::eye<mat>(p, p) / 100.0;
   }
 
-  // ===== Propuesta coherente con la curvatura =====
-  // Var(score) ≈ τ(1−τ) X' diag(w) X
   arma::mat wcA_prop;
   {
     if (arma::approx_equal(w, arma::ones<arma::vec>(w.n_elem), "absdiff", 1e-12)) {
@@ -124,36 +112,32 @@ Rcpp::List _mcmc_bwqr_ap_cpp(const arma::vec& y,
     }
     wcA_prop.diag() += ridge;
   }
-  double lambda = arma::accu(w);                     // ≈ n
-  arma::mat post_prec = lambda * wcA_prop + B_inv;   // precisión aprox.
-  arma::mat Sigma_prop = arma::inv_sympd(post_prec); // ~ cov posterior
-  Sigma_prop.diag() += 1e-12;                        // robustez numérica
+  double lambda = arma::accu(w);
+  arma::mat post_prec = lambda * wcA_prop + B_inv;
+  arma::mat Sigma_prop = arma::inv_sympd(post_prec);
+  Sigma_prop.diag() += 1e-12;
   arma::mat L_prop = chol(Sigma_prop, "lower");
 
   // Buffers
-  arma::mat S(n, p, fill::zeros); // no usado, pero mantenido para firma de log_post
+  arma::mat S(n, p, fill::zeros);
   arma::mat wcA(p, p), wc(p, p);
 
   const int n_keep = (n_mcmc - burnin) / thin;
   arma::mat beta_out((n_keep > 0 ? n_keep : 0), p, fill::none);
   int accept = 0;
 
-  // Inicialización: OLS (si X no es cuadrada -> MCO por SVD)
-  arma::vec beta_curr = arma::solve(X, y); // alternativa: iniciar en rq(τ) desde R
+  arma::vec beta_curr = arma::solve(X, y);
 
-  // Escala adaptativa multiplicativa
-  double ct = 2.38; // se ajusta hacia aceptar ~0.234
+  double ct = 2.38;
   int k_out = 0;
 
-  // --- Barra de progreso estética (10%, 20%, ..., 100%) ---
   const int bar_width = 40;
   int last_decile = -1;
 
   for (int k = 0; k < n_mcmc; ++k) {
-    // ---- Progreso en una sola línea (solo si print_progress > 0)
     if (print_progress > 0) {
       double perc = 100.0 * (k + 1.0) / n_mcmc;
-      int decile = (static_cast<int>(std::floor(perc)) / 10) * 10;  // 0,10,...,100
+      int decile = (static_cast<int>(std::floor(perc)) / 10) * 10;
       if (decile >= 10 && decile <= 100 && decile > last_decile) {
         int filled = static_cast<int>(std::round(bar_width * perc / 100.0));
         Rprintf("\r[");
@@ -178,7 +162,6 @@ Rcpp::List _mcmc_bwqr_ap_cpp(const arma::vec& y,
       ++accept;
     }
 
-    // Actualización Robbins-Monro de la escala (sin tocar la forma de Sigma_prop)
     ct = std::exp(std::log(ct) + std::pow(k + 1.0, -0.8) * (acc_prob - 0.234));
 
     if (k >= burnin && ((k - burnin) % thin == 0)) {
@@ -186,7 +169,6 @@ Rcpp::List _mcmc_bwqr_ap_cpp(const arma::vec& y,
     }
   }
 
-  // ---- Cierre limpio de la barra: fuerza 100% y salto de línea
   if (print_progress > 0) {
     Rprintf("\r[");
     for (int j = 0; j < bar_width; ++j) Rprintf("=");

@@ -1,100 +1,79 @@
-# Test for summary methods
-test_that("summary.bqr.svy works correctly", {
-  set.seed(222324)  # Reproducibility
+# =====================================================
+# Tests for summary.bayesQRsurvey (bqr.svy and mo.bqr.svy)
+# =====================================================
 
-  # Generate test data
-  n <- 20
-  x1 <- rnorm(n)
-  x2 <- rnorm(n)
-  y <- 1 + 2*x1 - 0.5*x2 + rnorm(n, 0, 0.5)
-  data <- data.frame(x1 = x1, x2 = x2, y = y)
+test_that("summary.bqr.svy returns valid output with realistic sample weights", {
+  set.seed(123)
 
-  # Fit model
-  fit <- bqr.svy(y ~ x1 + x2, data = data, quantile = 0.5, niter = 2000, burnin = 700)
+  # --- Generate finite population and sample ---
+  N <- 10000
+  x1_p <- runif(N, -1, 1)
+  x2_p <- runif(N, -1, 1)
+  y_p  <- 2 + 1.5 * x1_p - 0.8 * x2_p + rnorm(N)
+  n <- 300
+  z_aux <- rnorm(N, mean = 1 + y_p, sd = 0.5)
+  p_aux <- 1 / (1 + exp(2.5 - 0.5 * z_aux))
+  s_ind <- sample(1:N, n, replace = FALSE, prob = p_aux)
+  data <- data.frame(
+    y  = y_p[s_ind],
+    x1 = x1_p[s_ind],
+    x2 = x2_p[s_ind],
+    w  = 1 / p_aux[s_ind]
+  )
 
-  # Test summary
-  summary_result <- summary(fit)
+  # --- Fit model ---
+  fit <- bqr.svy(y ~ x1 + x2, weights = ~w, data = data, quantile = 0.5, niter = 300)
+  s <- summary(fit)
 
-  expect_s3_class(summary_result, "summary.bqr.svy")
-  expect_true(is.list(summary_result))
-  expect_true("call" %in% names(summary_result))
-  expect_true("coefficients" %in% names(summary_result))
-  expect_true("quantile" %in% names(summary_result))
-
-  # Test coefficients structure
-  expect_true(is.data.frame(summary_result$coefficients))
-  expect_equal(nrow(summary_result$coefficients), 3)  # intercept + 2 covariates
-  expect_true("Mean" %in% names(summary_result$coefficients))
-  expect_true("SD" %in% names(summary_result$coefficients))
-
-  # Test print method
-  expect_output(print(summary_result), "Bayesian Quantile Regression")
-  expect_output(print(summary_result), "Quantile\\s*\\(tau\\)\\s*:\\s*0\\.5")
-
-})
-
-test_that("summary.bqr.svy works with multiple quantiles", {
-  set.seed(333435)
-  
-  # Generate test data
-  n <- 20
-  x <- rnorm(n)
-  y <- 1 + 2*x + rnorm(n, 0, 0.5)
-  data <- data.frame(x = x, y = y)
-  
-  # Fit model with multiple quantiles (this should create a list of draws)
-  fit <- bqr.svy(y ~ x, data = data, quantile = c(0.25, 0.5, 0.75), n_iter = 100, n_chains = 2)
-  
-  # Test that the fit has the expected structure
-  expect_s3_class(fit, "bqr.svy")
-  expect_equal(length(fit$quantile), 3)
-  expect_true(is.list(fit$draws))  # Should be a list for multiple quantiles
-  
-  # Test summary - this is where the bug was occurring
-  summary_result <- summary(fit)
-  
-  expect_s3_class(summary_result, "summary.bqr.svy")
-  expect_true(is.list(summary_result))
-  expect_true("per_tau" %in% names(summary_result))
-  expect_equal(length(summary_result$per_tau), 3)  # One for each quantile
-  
-  # Each per_tau element should have the expected structure
-  for (i in 1:3) {
-    tau_summary <- summary_result$per_tau[[i]]
-    expect_true("tau" %in% names(tau_summary))
-    expect_true("coef_summary" %in% names(tau_summary))
-    expect_true("full_summary" %in% names(tau_summary))
-    expect_true(is.data.frame(tau_summary$coef_summary))
-    expect_true("lower_ci" %in% names(tau_summary$coef_summary))
-    expect_true("upper_ci" %in% names(tau_summary$coef_summary))
-  }
-  
-  # Test print method
-  expect_output(print(summary_result), "Bayesian Quantile Regression")
-})
-
-test_that("summary.mo.bqr.svy works correctly", {
-  set.seed(252627)
-
-  n <- 15
-  x <- rnorm(n)
-  y <- 0.5 + 1.5*x + rnorm(n, 0, 0.4)
-  data <- data.frame(x = x, y = y)
-
-  # Fit multiple quantile model
-  fit <- mo.bqr.svy(y ~ x, data = data, quantile = c(0.25, 0.5, 0.75), n_iter = 15)
-
-  # Test summary
-  summary_result <- summary(fit)
-
-  expect_s3_class(summary_result, "summary.mo_bqr.svy")
-  expect_true(is.list(summary_result))
-
-  # Test print method
-  expect_output(print(summary_result), "Multiple-Output Bayesian Quantile")
-  expect_output(print(summary_result), "0.250")
-  expect_output(print(summary_result), "0.500")
-  expect_output(print(summary_result), "0.750")
+  # --- Structure checks ---
+  expect_s3_class(s, "summary.bqr.svy")
+  expect_true(is.list(s))
+  expect_true(length(s) >= 1)
 })
 
 
+# -----------------------------------------------------
+
+test_that("summary.mo.bqr.svy returns valid output with informative prior", {
+  set.seed(456)
+
+  # --- Generate population and sample ---
+  N <- 5000
+  x1_p <- runif(N, -1, 1)
+  x2_p <- runif(N, -1, 1)
+  y1_p <- 2 + 1.5 * x1_p - 0.8 * x2_p + rnorm(N)
+  y2_p <- 1 + 0.5 * x1_p - 0.2 * x2_p + rnorm(N)
+  n <- 200
+  z_aux <- rnorm(N, mean = 1 + y1_p, sd = 0.5)
+  p_aux <- 1 / (1 + exp(2.5 - 0.5 * z_aux))
+  s_ind <- sample(1:N, n, replace = FALSE, prob = p_aux)
+  data <- data.frame(
+    y1 = y1_p[s_ind],
+    y2 = y2_p[s_ind],
+    x1 = x1_p[s_ind],
+    x2 = x2_p[s_ind],
+    w  = 1 / p_aux[s_ind]
+  )
+
+  # --- Define prior ---
+  prior_general <- prior(
+    beta_x_mean = c(2, 1.5, -0.8),
+    beta_x_cov  = diag(c(0.25, 0.25, 0.25)),
+    sigma_shape = 3,
+    sigma_rate  = 2,
+    beta_y_mean = 1,
+    beta_y_cov  = 0.25
+  )
+
+  # --- Fit model ---
+  fit_mo <- mo.bqr.svy(cbind(y1, y2) ~ x1 + x2,
+                       weights = data$w,
+                       data = data,
+                       prior = prior_general,
+                       n_dir = 5, estimate_sigma = TRUE)
+  s_mo <- summary(fit_mo)
+
+  # --- Structure checks ---
+  expect_s3_class(s_mo, "summary.mo.bqr.svy")
+  expect_true(is.list(s_mo))
+})

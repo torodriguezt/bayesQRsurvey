@@ -1,4 +1,4 @@
 library(testthat)
-library(tauBayesW)
+library(bayesQRsurvey)
 
-test_check("tauBayesW")
+test_check("bayesQRsurvey")

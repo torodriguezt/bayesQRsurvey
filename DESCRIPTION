@@ -26,8 +26,6 @@ Imports:
     stats,
     graphics,
     methods,
-    plotly,
-    geometry,
     pracma,
     ggplot2,
     rlang,
@@ -38,7 +36,6 @@ Suggests:
     rmarkdown,
     grDevices,
     testthat (>= 3.0.0)
-VignetteBuilder: knitr
 Config/testthat/edition: 3
 SystemRequirements: BLAS, LAPACK
 URL: https://github.com/torodriguezt/bayesQRsurvey

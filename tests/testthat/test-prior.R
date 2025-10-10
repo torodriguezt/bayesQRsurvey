@@ -1,127 +1,84 @@
-# tests/testthat/test-priors.R
+# =====================================================
+# Tests for prior() constructor
+# =====================================================
 
-test_that("prior_default() and as_bqr_prior() work correctly", {
-  p  <- 3
-  nm <- c("(Intercept)", paste0("x", 1:(p - 1)))
+test_that("prior() builds a valid prior object with all parameters", {
+  beta_x_mean <- c(2, 1.5, -0.8)
+  beta_x_cov  <- diag(c(0.25, 0.25, 0.25))
+  beta_y_mean <- 1
+  beta_y_cov  <- 0.25
 
-  # Basic construction
-  pr <- prior_default(p = p, names = nm)
-  expect_s3_class(pr, "bqr_prior")
-  expect_equal(names(pr$b0), nm)
-  expect_equal(dimnames(pr$B0), list(nm, nm))
-
-  # Scalar expansion (strip names for pure numeric equality)
-  pr2 <- prior_default(p = p, b0 = 0, B0 = 1000, names = nm)
-  expect_equal(unname(pr2$b0), rep(0, p))
-  expect_equal(unname(diag(pr2$B0)), rep(1000, p))
-
-  # Coercion from legacy list
-  legacy <- list(b0 = 0, B0 = 1000)
-  pr3 <- as_bqr_prior(legacy, p = p, names = nm, method = "score")
-  expect_s3_class(pr3, "bqr_prior")
-  expect_equal(unname(pr3$b0), rep(0, p))
-  expect_equal(unname(diag(pr3$B0)), rep(1000, p))
-
-  pr4 <- as_bqr_prior(legacy, p = p, names = nm, method = "approximate")
-  expect_s3_class(pr4, "bqr_prior")
-  expect_equal(unname(pr4$b0), rep(0, p))
-  expect_equal(unname(diag(pr4$B0)), rep(1000, p))
-
-  # Validation checks
-  expect_error(
-    as_bqr_prior(list(b0 = c(1, 2), B0 = diag(1, p)), p = p),
-    "length\\(b0\\) must be"
-  )
-  expect_error(
-    as_bqr_prior(list(b0 = rep(0, p), B0 = diag(1, p - 1)), p = p),
-    "B0 must be"
+  prior_general <- prior(
+    beta_x_mean = beta_x_mean,
+    beta_x_cov  = beta_x_cov,
+    sigma_shape = 3,
+    sigma_rate  = 2,
+    beta_y_mean = beta_y_mean,
+    beta_y_cov  = beta_y_cov
   )
 
-  # Print method
-  out <- capture.output(print(pr))
-  expect_true(any(grepl("bqr_prior", out)))
+  # --- Structure and class ---
+  expect_s3_class(prior_general, "prior")
+  expect_true(is.list(prior_general))
+
+  # --- Core names ---
+  expect_true(all(c("beta_x_mean", "beta_x_cov",
+                    "sigma_shape", "sigma_rate",
+                    "beta_y_mean", "beta_y_cov") %in% names(prior_general)))
+
+  # --- Type checks ---
+  expect_type(prior_general$beta_x_mean, "double")
+  expect_true(is.matrix(prior_general$beta_x_cov))
+  expect_true(is.numeric(prior_general$sigma_shape))
+  expect_true(is.numeric(prior_general$sigma_rate))
+  expect_type(prior_general$beta_y_mean, "double")
+  expect_true(is.numeric(prior_general$beta_y_cov))
+
+  # --- Dimension consistency ---
+  expect_equal(length(prior_general$beta_x_mean), nrow(prior_general$beta_x_cov))
+  expect_equal(ncol(prior_general$beta_x_cov), length(prior_general$beta_x_mean))
 })
 
-test_that("bqr.svy integrates with informative and default priors", {
-  skip_if_not(exists("bqr.svy"), "bqr.svy not available")
-  skip_if_not(exists(".MCMC_BWQR_SL"), "C++ backend .MCMC_BWQR_SL (score) not available")
+# -----------------------------------------------------
 
-  set.seed(101)
-  # Generate test data directly
-  n <- 30
-  x1 <- rnorm(n)
-  x2 <- runif(n, -1, 1)
-  y <- 1 + 0.5*x1 - 0.5*x2 + rnorm(n)
-  weights <- runif(n, 0.5, 2)
-  data <- data.frame(y = y, x1 = x1, x2 = x2)
+test_that("prior() works without optional sigma_* and beta_y_* parameters", {
+  beta_x_mean <- c(0.5, -0.2)
+  beta_x_cov  <- diag(2)
 
-  # --- Prior as classed object (default) ---
-  pr_obj <- prior_default(p = 3, b0 = 0, B0 = 100, names = c("(Intercept)", "x1", "x2"))
-  fit_obj <- bqr.svy(
-    y ~ x1 + x2,
-    weights  = weights,
-    data     = data,
-    quantile = 0.5,
-    method   = "score",
-    niter    = 1500,
-    burnin   = 500,
-    thin     = 1,
-    prior    = pr_obj
+  prior_simple <- prior(
+    beta_x_mean = beta_x_mean,
+    beta_x_cov  = beta_x_cov
   )
-  expect_s3_class(fit_obj, "bwqr_fit")
-  expect_s3_class(fit_obj$prior, "bqr_prior")
-  expect_length(fit_obj$beta, 3)
-  expect_true(is.matrix(fit_obj$draws))
 
-  # --- Prior as informative ---
-  pr_inf <- prior_default(
-    p     = 3,
-    b0    = c(1, 0.5, -0.5),
-    B0    = diag(c(0.1, 0.1, 0.1)),
-    names = c("(Intercept)", "x1", "x2")
-  )
-  fit_inf <- bqr.svy(
-    y ~ x1 + x2,
-    weights  = weights,
-    data     = data,
-    quantile = 0.5,
-    method   = "score",
-    niter    = 1500,
-    burnin   = 500,
-    thin     = 1,
-    prior    = pr_inf
-  )
-  expect_s3_class(fit_inf, "bwqr_fit")
-  expect_s3_class(fit_inf$prior, "bqr_prior")
+  expect_s3_class(prior_simple, "prior")
+  expect_true(is.list(prior_simple))
+
+  # Should still include sigma defaults even if not provided
+  expect_equal(prior_simple$sigma_shape, 0.001)
+  expect_equal(prior_simple$sigma_rate, 0.001)
+
+  # Optional elements (beta_y_mean / beta_y_cov) should exist or be NULL
+  expect_true("beta_y_mean" %in% names(prior_simple))
+  expect_true("beta_y_cov" %in% names(prior_simple))
+  expect_true(is.null(prior_simple$beta_y_mean) || is.numeric(prior_simple$beta_y_mean))
+  expect_true(is.null(prior_simple$beta_y_cov) || is.numeric(prior_simple$beta_y_cov))
 })
 
-test_that("bqr.svy works with approximate method and legacy-list prior", {
-  skip_if_not(exists("bqr.svy"), "bqr.svy not available")
-  skip_if_not(exists(".MCMC_BWQR_AP"), "C++ backend .MCMC_BWQR_AP (approximate) not available")
+# -----------------------------------------------------
 
-  set.seed(202)
-  # Generate test data directly
-  n <- 25
-  x1 <- rnorm(n)
-  x2 <- runif(n, -1, 1)
-  y <- 0.5 + 0.8*x1 - 0.3*x2 + rnorm(n)
-  weights <- runif(n, 0.5, 2)
-  data <- data.frame(y = y, x1 = x1, x2 = x2)
+test_that("prior() returns sensible defaults when called with no arguments", {
+  p_default <- prior()
 
-  # Legacy list prior (will be coerced)
-  pr_legacy <- list(b0 = 0, B0 = 200)
-  fit <- bqr.svy(
-    y ~ x1 + x2,
-    weights  = weights,
-    data     = data,
-    quantile = 0.5,
-    method   = "approximate",
-    niter    = 1200,
-    burnin   = 300,
-    thin     = 1,
-    prior    = pr_legacy
-  )
-  expect_s3_class(fit, "bwqr_fit")
-  expect_s3_class(fit$prior, "bqr_prior")
+  expect_s3_class(p_default, "prior")
+  expect_true(is.list(p_default))
+
+  # Default hyperparameters should be set
+  expect_equal(p_default$sigma_shape, 0.001)
+  expect_equal(p_default$sigma_rate, 0.001)
+
+  # Optional arguments should be NULL
+  expect_null(p_default$beta_x_mean)
+  expect_null(p_default$beta_x_cov)
+  expect_null(p_default$beta_y_mean)
+  expect_null(p_default$beta_y_cov)
 })
-

@@ -44,7 +44,7 @@
 #'   numeric predictor (excluding the response) is used.
 #' @param tau Quantile(s) to plot; must appear in \code{x$quantile}. If
 #'   \code{NULL}, all available are used.
-#' @param which (quantile/trace/density) Coefficient name or index to display. 
+#' @param which (quantile/trace/density) Coefficient name or index to display.
 #' The default is the first coefficient associated with the first variable in the model.
 #' @param add_points (fit) Logical; overlay observed data points.
 #' @param combine (fit) Logical; if multiple \code{tau}: \code{TRUE} overlays
@@ -93,6 +93,7 @@
 #' @aliases plot
 #' @method plot bqr.svy
 #' @rdname plot.bqr.svy
+#' @name plot.bqr.svy
 #' @export
 plot.bqr.svy <- function(
     x, y = NULL,
@@ -235,7 +236,7 @@ plot.bqr.svy <- function(
         df <- data.frame(
           x = xg,
           y = qmed,
-          tau = sprintf("τ = %.3f", ti),
+          tau = sprintf("tau = %.3f", ti),
           tau_numeric = ti
         )
 
@@ -274,7 +275,7 @@ plot.bqr.svy <- function(
           color = "Quantile",
           fill = "Quantile",
           title = if (is.null(main)) {
-            if (length(tau) == 1L) sprintf("Quantile Regression Fit (τ = %.3f)", tau[1])
+            if (length(tau) == 1L) sprintf("Quantile Regression Fit (tau = %.3f)", tau[1])
             else "Quantile Regression Fits"
           } else main
         )
@@ -408,7 +409,7 @@ plot.bqr.svy <- function(
       p <- p + ggplot2::labs(
         x = "Iteration",
         y = nm,
-        title = if (is.null(main)) sprintf("MCMC Trace: %s (τ = %.3f)", nm, tau[1]) else main
+        title = if (is.null(main)) sprintf("MCMC Trace: %s (tau = %.3f)", nm, tau[1]) else main
       )
 
       p <- p + ggplot2::theme(
@@ -444,7 +445,7 @@ plot.bqr.svy <- function(
       p <- p + ggplot2::labs(
         x = nm,
         y = "Density",
-        title = if (is.null(main)) sprintf("Posterior Density: %s (τ = %.3f)", nm, tau[1]) else main
+        title = if (is.null(main)) sprintf("Posterior Density: %s (tau = %.3f)", nm, tau[1]) else main
       )
 
       p <- p + ggplot2::theme(
@@ -528,7 +529,7 @@ plot.bqr.svy <- function(
     }
 
     if (length(tau) > 1L) {
-      labs <- sprintf("τ = %.3f", tau)
+      labs <- sprintf("tau = %.3f", tau)
       graphics::legend("topright", legend = labs, col = cols, lwd = line_size, bty = "n")
     }
 

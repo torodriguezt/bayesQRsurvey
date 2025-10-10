@@ -64,12 +64,12 @@ if (!exists("%||%"))
 #' @param burnin number of initial MCMC draws to be discarded.(default = 0)
 #' @param thin thinning parameter, i.e., keep every keepth draw (default=1).
 #' @param verbose logical flag indicating whether to print progress messages (default=TRUE).
-#' @param estimate_sigma logical flag indicating whether to estimate the scale parameter 
-#' when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)  
+#' @param estimate_sigma logical flag indicating whether to estimate the scale parameter
+#' when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)
 #'
 #' @details
-#' The bqr.svy function can estimate three types of models, where the quantile regression 
-#' coefficients are defined at the super-population level, and their estimators are built upon 
+#' The bqr.svy function can estimate three types of models, where the quantile regression
+#' coefficients are defined at the super-population level, and their estimators are built upon
 #' the survey weights.
 #' \itemize{
 #'   \item \code{"ald"} – The asymmetric Laplace distribution as working likelihood.
@@ -91,7 +91,7 @@ if (!exists("%||%"))
 #'   \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 #'
 #' @references
-#' Nascimento, M. L. & Gonçalves, K. C. M. (2024). Bayesian Quantile Regression Models
+#' Nascimento, M. L. & Gon\enc{c}{c}alves, K. C. M. (2024). Bayesian Quantile Regression Models
 #'   for Complex Survey Data Under Informative Sampling. *Journal of Survey Statistics and Methodology*,
 #'   12(4), 1105–1130.
 #'
@@ -130,9 +130,6 @@ if (!exists("%||%"))
 #' fit_score  <- bqr.svy(y ~ x1 + x2, weights = w, data = data, method = "score")
 #' fit_approx <- bqr.svy(y ~ x1 + x2, weights = w, data = data, method = "approximate")
 #'
-#' @usage bqr.svy(formula, weights = NULL, data = NULL, quantile = 0.5,
-#'   method = "ald", prior = NULL, niter = 50000, burnin = 0, thin = 1,
-#'   verbose = TRUE, estimate_sigma = FALSE)
 #'
 #' @importFrom stats model.frame model.matrix model.response terms
 #' @export

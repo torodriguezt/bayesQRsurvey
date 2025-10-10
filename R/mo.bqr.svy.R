@@ -8,22 +8,18 @@ if (!exists("%||%"))
 .user_defined_sigma <- function(pr) {
   if (is.null(pr)) return(FALSE)
 
-  # Si prior() moderno añadió atributo, úsalo
   uds <- attr(pr, "user_defined_sigma_prior")
   if (!is.null(uds)) return(isTRUE(uds))
 
-  # Sentinelas por defecto (los de prior() actual)
   DEFAULT_SHAPE <- 0.001
   DEFAULT_RATE  <- 0.001
 
-  # prior() clásico
   if (inherits(pr, "prior")) {
     has_shape <- !is.null(pr$sigma_shape)
     has_rate  <- !is.null(pr$sigma_rate)
     if (!has_shape && !has_rate) return(FALSE)
     if (has_shape && has_rate &&
         isTRUE(all(is.finite(c(pr$sigma_shape, pr$sigma_rate))))) {
-      # Si son exactamente los defaults, asumimos que el usuario NO los pasó
       if (identical(pr$sigma_shape, DEFAULT_SHAPE) &&
           identical(pr$sigma_rate,  DEFAULT_RATE)) {
         return(FALSE)
@@ -34,7 +30,6 @@ if (!exists("%||%"))
     return(TRUE)
   }
 
-  # mo_bqr_prior (salida de as_mo_bqr_prior)
   if (inherits(pr, "mo_bqr_prior")) {
     has_shape <- !is.null(pr$sigma_shape)
     has_rate  <- !is.null(pr$sigma_rate)
@@ -93,8 +88,8 @@ if (!exists("%||%"))
 #' @param epsilon numerical scalar indicating the convergence tolerance for the EM algorithm (default = 1e-6).
 #' @param max_iter numerical scalar indicating maximum number of EM iterations (default = 1000).
 #' @param verbose logical flag indicating whether to print progress messages (default=FALSE).
-#' @param estimate_sigma logical flag indicating whether to estimate the scale parameter 
-#' when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)  
+#' @param estimate_sigma logical flag indicating whether to estimate the scale parameter
+#' when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)
 #'
 #' @return An object of class \code{"mo.bqr.svy"} containing:
 #'   \item{call}{The matched call}
@@ -118,7 +113,7 @@ if (!exists("%||%"))
 #'                         \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 #'
 #' @references
-#' Nascimento, M. L. & Gonçalves, K. C. M. (2025+). A Bayesian approach to multiple-output 
+#' Nascimento, M. L. & \if{latex}{Gon\c{c}alves}{Gon&ccedil;alves}, K. C. M. (2025+). A Bayesian approach to multiple-output
 #'   quantile regression analysis under informative sampling. *Journal of Survey Statistics and Methodology*,
 #'
 #' @examples
@@ -232,7 +227,7 @@ mo.bqr.svy <- function(formula,
           tol <- 1e-8
           ortho_err <- max(abs(drop(crossprod(Gk, u_k))))
           if (ortho_err > tol)
-            stop(sprintf("gamma_U[[%d]] is not orthogonal to U[,%d] (max |Γ' u| = %.2e > %.1e).",
+            stop(sprintf("gamma_U[[%d]] is not orthogonal to U[,%d].",
                          k, k, ortho_err, tol))
           if (qr(Gk)$rank < (d - 1))
             stop(sprintf("gamma_U[[%d]] does not have full column rank d-1.", k))
@@ -282,7 +277,6 @@ mo.bqr.svy <- function(formula,
     stop("'prior' must be NULL, a 'prior' object (see prior()), or a 'mo_bqr_prior' (legacy).", call. = FALSE)
   }
 
-  # --- WARNING: solo si el usuario PASÓ prior de sigma y NO se estima sigma
   user_defined_sigma_prior <- .user_defined_sigma(prior)
   if (isFALSE(estimate_sigma) && isTRUE(user_defined_sigma_prior)) {
     warning("With estimate_sigma=FALSE, 'sigma_shape' and 'sigma_rate' in prior will be ignored.", call. = FALSE)
@@ -387,9 +381,8 @@ mo.bqr.svy <- function(formula,
           fix_sigma = 1.0
         )
       } else {
-        # Fallback: prior ultra-concentrada en 1 y forzar salida sigma=1
         a0_use <- 1e9; b0_use <- a0_use + 1
-        if (verbose) message("Backend without 'fix_sigma'; using highly concentrated prior at sigma^2≈1.")
+        if (verbose) message("Backend without 'fix_sigma'; using highly concentrated prior at sigma = 1.")
         out <- .bwqr_weighted_em_cpp_sep(
           y        = y,
           x        = X,
@@ -480,20 +473,4 @@ mo.bqr.svy <- function(formula,
     response_dim    = d,
     estimate_sigma  = isTRUE(estimate_sigma)
   ), class = "mo.bqr.svy")
-}
-
-#' @keywords internal
-plot.mo.bqr.svy <- function(x, ..., datafile = NULL, response = c("Y1","Y2"),
-                            xValue = NULL, paintedArea = FALSE, comparison = FALSE,
-                            show_data = !is.null(datafile)) {
-  drawQuantileRegion(
-    fit         = x,
-    datafile    = datafile,
-    response    = response,
-    xValue      = xValue,
-    paintedArea = paintedArea,
-    comparison  = comparison,
-    print_plot  = TRUE,
-    show_data   = show_data
-  )
 }
