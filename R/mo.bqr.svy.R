@@ -93,9 +93,8 @@ if (!exists("%||%"))
 #' @param epsilon numerical scalar indicating the convergence tolerance for the EM algorithm (default = 1e-6).
 #' @param max_iter numerical scalar indicating maximum number of EM iterations (default = 1000).
 #' @param verbose logical flag indicating whether to print progress messages (default=FALSE).
-#' @param estimate_sigma logical flag; if \code{TRUE}, the scale parameter
-#'   \eqn{\sigma^2} is estimated by EM. If \code{FALSE}, \eqn{\sigma^2} is fixed to 1 (default).
-#'
+#' @param estimate_sigma logical flag indicating whether to estimate the scale parameter 
+#' when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)  
 #'
 #' @return An object of class \code{"mo.bqr.svy"} containing:
 #'   \item{call}{The matched call}
@@ -117,6 +116,10 @@ if (!exists("%||%"))
 #'   \item{response_dim}{Dimension of the response \eqn{d}}
 #'   \item{estimate_sigma}{Logical flag indicating whether the scale parameter
 #'                         \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
+#'
+#' @references
+#' Nascimento, M. L. & Gonçalves, K. C. M. (2025+). A Bayesian approach to multiple-output 
+#'   quantile regression analysis under informative sampling. *Journal of Survey Statistics and Methodology*,
 #'
 #' @examples
 #' library(MASS)
