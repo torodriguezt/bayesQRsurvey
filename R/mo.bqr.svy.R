@@ -113,8 +113,9 @@ if (!exists("%||%"))
 #'                         \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 #'
 #' @references
-#' Nascimento, M. L. & \if{latex}{Gon\c{c}alves}{Gon&ccedil;alves}, K. C. M. (2025+). A Bayesian approach to multiple-output
-#'   quantile regression analysis under informative sampling. *Journal of Survey Statistics and Methodology*,
+#' Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2024).
+#' Bayesian Quantile Regression Models for Complex Survey Data Under Informative Sampling.
+#' \emph{Journal of Survey Statistics and Methodology}, 12(4), 1105–1130.
 #'
 #' @examples
 #' library(MASS)
