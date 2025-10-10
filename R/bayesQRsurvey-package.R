@@ -5,16 +5,18 @@
 #' survey designs with two main functions:
 #'
 #' \itemize{
-#'   \item \code{bqr.svy()}: Single quantile estimation using MCMC methods
-#'   \item \code{mo.bqr.svy()}: Multiple quantile estimation using EM algorithm
+#'   \item \code{bqr.svy()}: Bayesian methods for estimating quantile regression models
+#'    using MCMC methods
+#'   \item \code{mo.bqr.svy()}: Bayesian approach to multiple-output quantile regression
+#'    using EM algorithm
 #' }
 #'
 #' @section Main functions:
 #' \describe{
-#'   \item{\code{\link{bqr.svy}}}{Fits Bayesian quantile regression for a single quantile using MCMC methods (ALD, Score, Approximate)}
+#'   \item{\code{\link{bqr.svy}}}{Fits Bayesian quantile regression for multiple quantiles using MCMC methods (ALD, Score, Approximate)}
 #'   \item{\code{\link{mo.bqr.svy}}}{Fits Bayesian quantile regression for multiple quantiles using EM algorithm}
 #'   \item{\code{\link{plot}}}{Standard plot method for bqr.svy objects}
-#'   \item{\code{\link{summary}}}{Unified summary method for all tauBayesW model objects}
+#'   \item{\code{\link{summary}}}{Unified summary method for all bayesQRsurvey model objects}
 #'   \item{\code{\link{prior}}}{Unified interface for creating prior distributions}
 #' }
 #'
