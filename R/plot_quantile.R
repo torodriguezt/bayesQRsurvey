@@ -81,7 +81,7 @@
 #' \donttest{
 #' data(mtcars)
 #' fit <- bqr.svy(mpg ~ wt + hp + cyl, data = mtcars,
-#'                quantile = c(0.25, 0.5, 0.75), method = "ald",
+#'                quantile = c(0.5), method = "ald",
 #'                niter = 20000, burnin = 10000, thin = 5)
 #'
 #' plot(fit, type = "fit", predictor = "wt", show_ci = TRUE)
@@ -265,7 +265,7 @@ plot.bqr.svy <- function(
                                      inherit.aes = FALSE)
       }
 
-      p <- p + ggplot2::geom_line(ggplot2::aes(color = .data$tau), size = line_size)
+      p <- p + ggplot2::geom_line(ggplot2::aes(color = .data$tau), linewidth = line_size)
       p <- p + .get_color_scale(color_palette, length(tau))
 
       p <- p + .get_theme(theme_style) +

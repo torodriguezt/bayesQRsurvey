@@ -52,7 +52,6 @@ Rcpp::List _bwqr_weighted_em_cpp_sep(
   if (G > 0 && (G % K != 0)) stop("Gamma.cols() must be a multiple of U.cols().");
   const int r = (K > 0) ? (G / std::max(1, K)) : 0;
   const int m_blk = p + r;
-  const int m_tot = K * m_blk;
 
   bool prior_by_block = (mu0.size() == m_blk) && (sigma0.rows() == m_blk && sigma0.cols() == m_blk);
 

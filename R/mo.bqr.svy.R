@@ -119,32 +119,51 @@ if (!exists("%||%"))
 #' <doi:10.1093/jssam/smae015>
 #'
 #' @examples
+#' \donttest{
 #' library(MASS)
 #'
 #' # Generate population data
 #' set.seed(123)
 #' N    <- 10000
-#' data <- mvrnorm(N,rep(0,3),matrix(c(4,0,2,0,1,1.5,2,1.5,9),3,3))
-#' x_p  <- as.matrix(data[,1])
-#' y_p  <- data[,2:3]+cbind(rep(0,N),x_p)
+#' data <- mvrnorm(N, rep(0, 3),
+#'                 matrix(c(4, 0, 2,
+#'                          0, 1, 1.5,
+#'                          2, 1.5, 9), 3, 3))
+#' x_p  <- as.matrix(data[, 1])
+#' y_p  <- data[, 2:3] + cbind(rep(0, N), x_p)
 #'
 #' # Generate sample data
 #' n <- 500
-#' z_aux <- rnorm(N, mean = 1 + y_p, sd=.5)
+#' z_aux <- rnorm(N, mean = 1 + y_p, sd = 0.5)
 #' p_aux <- 1 / (1 + exp(2.5 - 0.5 * z_aux))
 #' s_ind <- sample(1:N, n, replace = FALSE, prob = p_aux)
-#' y_s <- y_p[s_ind,]
-#' x_s <- x_p[s_ind,]
-#' w   <- 1 / p_aux[s_ind]
-#' data_s<- data.frame(y1 = y_s[,1], y2 = y_s[,2],  x1 = x_s, w = w)
+#' y_s   <- y_p[s_ind, ]
+#' x_s   <- x_p[s_ind, ]
+#' w     <- 1 / p_aux[s_ind]
+#' data_s <- data.frame(y1 = y_s[, 1],
+#'                      y2 = y_s[, 2],
+#'                      x1 = x_s,
+#'                      w  = w)
 #'
 #' # Basic usage with default priors when U and gamma_U are given
-#' fit1 <- mo.bqr.svy(cbind(y1, y2) ~ x1, weights = w, data = data_s, quantile = c(0.1, 0.2),
-#'  U = matrix(c(0,1,1/sqrt(2),1/sqrt(2)),2),
-#'  gamma_U = list(c(1,0),c(1/sqrt(2),-1/sqrt(2))))
+#' fit1 <- mo.bqr.svy(
+#'   cbind(y1, y2) ~ x1,
+#'   weights = w,
+#'   data = data_s,
+#'   quantile = c(0.1, 0.2),
+#'   U = matrix(c(0, 1, 1/sqrt(2), 1/sqrt(2)), 2),
+#'   gamma_U = list(c(1, 0), c(1/sqrt(2), -1/sqrt(2)))
+#' )
 #'
 #' # Basic usage with default priors when n_dir is given
-#' fit2 <- mo.bqr.svy(cbind(y1, y2) ~ x1, weights = w, data = data_s, quantile = c(0.1, 0.2), n_dir=2)
+#' fit2 <- mo.bqr.svy(
+#'   cbind(y1, y2) ~ x1,
+#'   weights = w,
+#'   data = data_s,
+#'   quantile = c(0.1, 0.2),
+#'   n_dir = 2
+#' )
+#' }
 #'
 #' @export
 #' @importFrom stats model.frame model.matrix model.response

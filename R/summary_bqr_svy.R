@@ -396,6 +396,7 @@ summary.list <- function(object, ..., methods = NULL, target_tau = 0.5, digits =
 #' @docType methods
 #'
 #' @examples
+#' \donttest{
 #' set.seed(123)
 #' N    <- 10000
 #' x1_p <- runif(N, -1, 1)
@@ -404,7 +405,7 @@ summary.list <- function(object, ..., methods = NULL, target_tau = 0.5, digits =
 #'
 #' # Generate sample data
 #' n <- 500
-#' z_aux <- rnorm(N, mean = 1 + y_p, sd=.5)
+#' z_aux <- rnorm(N, mean = 1 + y_p, sd = .5)
 #' p_aux <- 1 / (1 + exp(2.5 - 0.5 * z_aux))
 #' s_ind <- sample(1:N, n, replace = FALSE, prob = p_aux)
 #' y_s   <- y_p[s_ind]
@@ -414,9 +415,11 @@ summary.list <- function(object, ..., methods = NULL, target_tau = 0.5, digits =
 #' data  <- data.frame(y = y_s, x1 = x1_s, x2 = x2_s, w = w)
 #'
 #' # Fit a model
-#' fit1 <- bqr.svy(y ~ x1 + x2, weights = w, data = data, niter = 2000, burnin = 500, thin = 2)
+#' fit1 <- bqr.svy(y ~ x1 + x2, weights = w, data = data,
+#'                 niter = 2000, burnin = 500, thin = 2)
 #'
 #' print(fit1)
+#' }
 NULL
 
 

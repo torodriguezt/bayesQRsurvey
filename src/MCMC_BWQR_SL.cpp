@@ -10,8 +10,6 @@
 using namespace Rcpp;
 using namespace arma;
 
-constexpr double PI = 3.14159265358979323846;
-
 // --- Safe Cholesky with growing ridge ---
 inline bool safe_chol(mat& L, const mat& A, double& ridge, const bool lower=true) {
   const double diag_mean = mean(A.diag());
