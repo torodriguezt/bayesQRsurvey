@@ -113,4 +113,5 @@ fit_approx <- bqr.svy(y ~ x1 + x2, weights = w, data = data, method = "approxima
 Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2024).
 Bayesian Quantile Regression Models for Complex Survey Data Under Informative Sampling.
 \emph{Journal of Survey Statistics and Methodology}, 12(4), 1105–1130.
+\url{doi:10.1093/jssam/smae015}
 }

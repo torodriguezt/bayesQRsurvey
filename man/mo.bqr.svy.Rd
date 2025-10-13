@@ -108,4 +108,5 @@ fit2 <- mo.bqr.svy(cbind(y1, y2) ~ x1, weights = w, data = data_s, quantile = c(
 Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2024).
 Bayesian Quantile Regression Models for Complex Survey Data Under Informative Sampling.
 \emph{Journal of Survey Statistics and Methodology}, 12(4), 1105–1130.
+\url{doi:10.1093/jssam/smae015}
 }
