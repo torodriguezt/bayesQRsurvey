@@ -4,10 +4,6 @@
 
 **bayesQRsurvey** is an R package for **Bayesian weighted quantile regression** for complex survey designs. The package provides both single and multiple-output quantile regression estimation using efficient MCMC and EM algorithms with fast C++ implementations.
 
-<p align="center">
-  <img src="web/public/logo_tau.png" width="180" alt="tauBayesW logo"/>
-</p>
-
 ---
 
 ## ⚙️ Features
