@@ -1,6 +1,6 @@
 # bayesQRsurvey: Bayesian Weighted Quantile Regression
 
-[[CRAN status](https://www.r-pkg.org/badges/version/tauBayesW)](https://CRAN.R-project.org/package=tauBayesW)
+[![CRAN published](https://img.shields.io/badge/CRAN-published-brightgreen)](https://CRAN.R-project.org/package=bayesQRsurvey)
 
 **bayesQRsurvey** is an R package for **Bayesian weighted quantile regression** for complex survey designs. The package provides both single and multiple-output quantile regression estimation using efficient MCMC and EM algorithms with fast C++ implementations.
 
