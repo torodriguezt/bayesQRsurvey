@@ -204,7 +204,25 @@ mo.bqr.svy <- function(formula,
   coef_names <- colnames(X)
 
   # --- weights ---
-  wts <- if (is.null(weights)) rep(1, n) else as.numeric(weights)
+  # Evaluate the weights expression in the data context first, then the calling
+  # environment.  This lets users write  weights = w  when "w" is a column in
+  # `data` without having to pre-define it in the global environment.
+  w_expr <- substitute(weights)
+  wts <- if (missing(weights) || is.null(w_expr) || identical(w_expr, quote(NULL))) {
+    rep(1, n)
+  } else {
+    w_val <- tryCatch(
+      eval(w_expr, envir = if (is.data.frame(data)) data else NULL,
+           enclos = parent.frame()),
+      error = function(e) {
+        stop("Could not find weights variable '", deparse(w_expr),
+             "' in 'data' or calling environment.", call. = FALSE)
+      }
+    )
+    if (!is.numeric(w_val))
+      stop("'weights' must be numeric.", call. = FALSE)
+    as.numeric(w_val)
+  }
   if (length(wts) != n)  stop("'weights' must have length n.")
   if (any(!is.finite(wts)) || any(wts <= 0)) stop("Invalid weights.")
   wts <- wts / mean(wts)
