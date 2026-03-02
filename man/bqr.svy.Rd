@@ -11,7 +11,7 @@ bqr.svy(
   quantile = 0.5,
   method = c("ald", "score", "approximate"),
   prior = NULL,
-  niter = 50000,
+  niter = 20000,
   burnin = 0,
   thin = 1,
   verbose = TRUE,

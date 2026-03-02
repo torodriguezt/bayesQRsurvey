@@ -141,7 +141,7 @@ bqr.svy <- function(formula,
                     quantile = 0.5,
                     method   = c("ald", "score", "approximate"),
                     prior    = NULL,
-                    niter    = 50000,
+                    niter    = 20000,
                     burnin   = 0,
                     thin     = 1,
                     verbose  = TRUE,
@@ -184,15 +184,30 @@ bqr.svy <- function(formula,
   mt <- attr(mf, "terms")
 
   # --- Weights ---
-  w <- if (is.null(weights)) {
+  # Evaluate the weights expression in the data context first, then the calling
+  # environment.  This lets users write  weights = w  when "w" is a column in
+  # `data` without having to pre-define it in the global environment.
+  w_expr <- substitute(weights)
+  w <- if (missing(weights) || is.null(w_expr) || identical(w_expr, quote(NULL))) {
     rep(1, length(y))
-  } else if (is.numeric(weights)) {
-    if (length(weights) != length(y))
+  } else {
+    w_val <- tryCatch(
+      eval(w_expr, envir = if (is.data.frame(data)) data else NULL,
+           enclos = parent.frame()),
+      error = function(e) {
+        stop("Could not find weights variable '", deparse(w_expr),
+             "' in 'data' or calling environment.", call. = FALSE)
+      }
+    )
+    if (inherits(w_val, "formula")) {
+      w_val <- model.frame(w_val, data)[[1L]]
+    }
+    if (!is.numeric(w_val))
+      stop("'weights' must be numeric.", call. = FALSE)
+    if (length(w_val) != length(y))
       stop("Length of 'weights' != length of response.", call. = FALSE)
-    weights
-  } else if (inherits(weights, "formula")) {
-    model.frame(weights, data)[[1L]]
-  } else stop("'weights' must be numeric or a one-sided formula.", call. = FALSE)
+    w_val
+  }
 
   p <- ncol(X)
 
