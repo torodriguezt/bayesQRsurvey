@@ -20,5 +20,6 @@ NULL
 utils::globalVariables(c(
   "tau", "x", "yhat_lo", "yhat_up",
   "xid", "y1", "y2", "y3", "tau_f",
-  "med", "lo", "hi"
+  "med", "lo", "hi",
+  "taus", "min", "max"
 ))
