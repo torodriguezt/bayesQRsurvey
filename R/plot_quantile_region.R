@@ -256,25 +256,11 @@ plotQuantileRegion <- function(model,
     taus_order <- sort(unique(all_regions$tau))
     n_taus     <- length(taus_order)
 
-    # Sequential blue palette via grDevices (no RColorBrewer dependency)
-    # rev = TRUE so index 1 = lightest; skip the 2 lightest shades
-    n_extra <- 2L
-    all_cols <- grDevices::hcl.colors(n_taus + n_extra, "Blues 3", rev = TRUE)
-    palette  <- all_cols[(n_extra + 1L):(n_taus + n_extra)]
+    # Dark grayscale palette: from medium-dark gray to near-black
+    palette <- grDevices::gray.colors(n_taus, start = 0.45, end = 0.05)
 
-    # Darker palette for legend text so labels are readable on white bg
-    legend_cols <- grDevices::hcl.colors(n_taus + n_extra, "Blues 3",
-                                         alpha = NULL)
-    # Darken by shifting luminance down
-    legend_palette <- vapply(palette, function(col) {
-      rgb_val <- grDevices::col2rgb(col)
-      grDevices::rgb(
-        pmax(rgb_val[1, ] - 60L, 0L),
-        pmax(rgb_val[2, ] - 60L, 0L),
-        pmax(rgb_val[3, ] - 60L, 0L),
-        maxColorValue = 255
-      )
-    }, character(1), USE.NAMES = FALSE)
+    # Legend text matches fill colours
+    legend_palette <- palette
 
     g <- ggplot2::ggplot(df_points, ggplot2::aes(x = .data$y1, y = .data$y2)) +
       ggplot2::geom_point(alpha = point_alpha, color = "gray40",
