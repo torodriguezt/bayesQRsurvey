@@ -257,9 +257,9 @@ plotQuantileRegion <- function(model,
     n_taus     <- length(taus_order)
 
     # Sequential blue palette via grDevices (no RColorBrewer dependency)
-    # Skip the 2 lightest shades so all colours remain readable
+    # rev = TRUE so index 1 = lightest; skip the 2 lightest shades
     n_extra <- 2L
-    all_cols <- grDevices::hcl.colors(n_taus + n_extra, "Blues 3")
+    all_cols <- grDevices::hcl.colors(n_taus + n_extra, "Blues 3", rev = TRUE)
     palette  <- all_cols[(n_extra + 1L):(n_taus + n_extra)]
 
     # Darker palette for legend text so labels are readable on white bg
@@ -288,7 +288,7 @@ plotQuantileRegion <- function(model,
         ggplot2::geom_ribbon(
           data        = reg,
           ggplot2::aes(x = .data$y1, ymin = .data$min, ymax = .data$max),
-          alpha       = 0.3,
+          alpha       = 0.45,
           fill        = palette[i],
           inherit.aes = FALSE
         ) +
