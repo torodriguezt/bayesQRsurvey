@@ -1,6 +1,6 @@
 Package: bayesQRsurvey
 Title: Bayesian Quantile Regression Models for Complex Survey Data Analysis
-Version: 0.1.5
+Version: 0.2.0
 Authors@R: 
     c(
         person("Tomás", "Rodríguez Taborda", email = "torodriguezt@unal.edu.co", role = c("aut", "cre")),
