@@ -257,11 +257,10 @@ plotQuantileRegion <- function(model,
     n_taus     <- length(taus_order)
 
     # Sequential blue palette via grDevices (no RColorBrewer dependency)
-    palette <- if (n_taus <= 9L) {
-      grDevices::hcl.colors(max(3L, n_taus), "Blues 3")[seq_len(n_taus)]
-    } else {
-      grDevices::hcl.colors(n_taus, "Blues 3")
-    }
+    # Skip the 2 lightest shades so all colours remain readable
+    n_extra <- 2L
+    all_cols <- grDevices::hcl.colors(n_taus + n_extra, "Blues 3")
+    palette  <- all_cols[(n_extra + 1L):(n_taus + n_extra)]
 
     g <- ggplot2::ggplot(df_points, ggplot2::aes(x = .data$y1, y = .data$y2)) +
       ggplot2::geom_point(alpha = point_alpha, color = "gray40",
