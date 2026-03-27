@@ -271,14 +271,17 @@ plot.bqr.svy <- function(
       p <- p + .get_theme(theme_style) +
         ggplot2::labs(
           x = predictor,
-          y = "Predicted Quantile",
+          y = resp,
           color = "Quantile",
-          fill = "Quantile",
           title = if (is.null(main)) {
             if (length(tau) == 1L) sprintf("Quantile Regression Fit (tau = %.3f)", tau[1])
             else "Quantile Regression Fits"
           } else main
         )
+
+      if (show_ci) {
+        p <- p + ggplot2::labs(fill = "Quantile")
+      }
 
       if (length(tau) > 1 && !combine) {
         p <- p + ggplot2::facet_wrap(~ .data$tau, scales = "free_y")
@@ -340,7 +343,7 @@ plot.bqr.svy <- function(
     # ggplot2 plot
     if (use_ggplot && requireNamespace("ggplot2", quietly = TRUE)) {
       p <- ggplot2::ggplot(qsum, ggplot2::aes(x = tau, y = med)) +
-        ggplot2::geom_line(size = line_size) +
+        ggplot2::geom_line(linewidth = line_size) +
         ggplot2::geom_point(size = 2)
 
       if (isTRUE(show_ci)) {
@@ -401,9 +404,9 @@ plot.bqr.svy <- function(
       )
 
       p <- ggplot2::ggplot(trace_data, ggplot2::aes(x = .data$iteration, y = .data$value))
-      p <- p + ggplot2::geom_line(color = "steelblue", size = 0.7, alpha = 0.8)
+      p <- p + ggplot2::geom_line(color = "steelblue", linewidth = 0.7, alpha = 0.8)
       p <- p + ggplot2::geom_hline(yintercept = stats::median(v), color = "red",
-                                   linetype = "dashed", size = 1)
+                                   linetype = "dashed", linewidth = 1)
 
       p <- p + .get_theme(theme_style)
       p <- p + ggplot2::labs(
@@ -437,9 +440,9 @@ plot.bqr.svy <- function(
 
       p <- ggplot2::ggplot(data.frame(x = v), ggplot2::aes(x = .data$x))
       p <- p + ggplot2::geom_density(fill = "lightblue", color = "darkblue",
-                                     alpha = 0.7, size = 1)
+                                     alpha = 0.7, linewidth = 1)
       p <- p + ggplot2::geom_vline(xintercept = stats::median(v), color = "red",
-                                   linetype = "dashed", size = 1)
+                                   linetype = "dashed", linewidth = 1)
 
       p <- p + .get_theme(theme_style)
       p <- p + ggplot2::labs(
@@ -495,7 +498,7 @@ plot.bqr.svy <- function(
 
   if (length(tau) == 1L || isTRUE(combine)) {
     graphics::plot(xg, apply(preds_list[[1]], 1, stats::median), type = "n",
-                   xlab = predictor, ylab = "Predicted quantile",
+                   xlab = predictor, ylab = resp,
                    main = if (is.null(main)) {
                      if (length(tau) == 1L) sprintf("Quantile fit vs %s (tau=%.3f)", predictor, tau[1])
                      else sprintf("Quantile fit vs %s (taus: %s)", predictor, paste(format(tau, digits = 3), collapse = ", "))
@@ -544,7 +547,7 @@ plot.bqr.svy <- function(
       y_med <- apply(preds_k, 1, stats::median)
 
       graphics::plot(xg, y_med, type = "l", col = cols[k], lwd = line_size,
-                     xlab = predictor, ylab = "Predicted quantile",
+                     xlab = predictor, ylab = resp,
                      main = sprintf("tau = %.3f", ti))
       graphics::grid()
 

@@ -17,7 +17,7 @@ Description: Provides Bayesian quantile regression models for complex survey dat
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 LinkingTo:
     Rcpp,
     RcppArmadillo,
@@ -41,4 +41,3 @@ Config/testthat/edition: 3
 SystemRequirements: BLAS, LAPACK
 URL: https://github.com/torodriguezt/bayesQRsurvey
 BugReports: https://github.com/torodriguezt/bayesQRsurvey/issues
-
