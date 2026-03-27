@@ -79,10 +79,6 @@
 #'    respectively.  If \code{NULL}, the ranges are computed from the data
 #'    with a 15 percent margin.
 #' @param main Optional character string for the plot title.
-#' @param theme_style Character; one of \code{"minimal"}, \code{"classic"},
-#'    \code{"bw"}, \code{"light"} (default = \code{"bw"}).
-#' @param color_palette Character; one of \code{"blues"}, \code{"set1"},
-#'    \code{"viridis"}, \code{"dark2"} (default = \code{"blues"}).
 #' @param point_alpha Numeric in \code{[0, 1]}; transparency for the
 #'    observed-data point cloud (default = 0.3).
 #' @param point_size Numeric; size of the data points (default = 1.2).
@@ -129,9 +125,10 @@
 #'
 #' @seealso \code{\link{mo.bqr.svy}}, \code{\link{prior}}
 #' @importFrom ggplot2 ggplot aes geom_point geom_ribbon geom_path
-#'    scale_color_brewer scale_linetype_discrete theme theme_bw theme_minimal
-#'    theme_classic theme_light labs annotate element_text element_blank
-#'    scale_fill_brewer scale_color_viridis_d scale_fill_viridis_d
+#'    scale_color_manual scale_linetype_discrete
+#'    theme theme_minimal
+#'    labs annotate element_text element_blank element_rect element_line
+#'    margin unit
 #' @export
 plotQuantileRegion <- function(model,
                                response,
@@ -141,8 +138,6 @@ plotQuantileRegion <- function(model,
                                paintedArea   = TRUE,
                                range_y       = NULL,
                                main          = NULL,
-                               theme_style   = c("bw", "minimal", "classic", "light"),
-                               color_palette = c("blues", "set1", "viridis", "dark2"),
                                point_alpha   = 0.3,
                                point_size    = 1.2,
                                line_size     = 0.8,
@@ -160,8 +155,6 @@ plotQuantileRegion <- function(model,
     stop(sprintf("Column(s) %s not found in 'datafile'.",
                  paste0("'", miss, "'", collapse = ", ")), call. = FALSE)
 
-  theme_style   <- match.arg(theme_style)
-  color_palette <- match.arg(color_palette)
 
   # --- Extract model components ---------------------------------------
   directions <- model$U
@@ -239,133 +232,138 @@ plotQuantileRegion <- function(model,
     return(invisible(NULL))
   }
 
-  # --- ggplot2 theme helper -------------------------------------------
-  base_theme <- switch(theme_style,
-                       "minimal" = ggplot2::theme_minimal(),
-                       "classic" = ggplot2::theme_classic(),
-                       "bw"      = ggplot2::theme_bw(),
-                       "light"   = ggplot2::theme_light()
-  )
-
   # --- Observed data points -------------------------------------------
   df_points <- data.frame(y1 = Y[[1]], y2 = Y[[2]])
 
+  # --- Plot style settings ----------------------------------------------
+  full_palette <- c("#00E5FF", "#FF1744", "#76FF03", "#FFEA00",
+                    "#D500F9", "#FF9100", "#69F0AE", "#448AFF")
+  pt_col       <- "grey55"
+  pt_alpha_m   <- 0.35
+  pt_size_m    <- 0.8
+  border_dark  <- 0.85
+  ribbon_alpha <- 0.35
+  lw_mult      <- 1.3
+  refined_theme <- ggplot2::theme_minimal() +
+    ggplot2::theme(
+      plot.title       = ggplot2::element_text(size = 14, face = "bold",
+                                                hjust = 0.5, color = "grey15"),
+      axis.title       = ggplot2::element_text(size = 12, face = "bold",
+                                                color = "grey20"),
+      axis.text        = ggplot2::element_text(size = 10, color = "grey40"),
+      panel.background = ggplot2::element_rect(fill = "grey96", color = NA),
+      panel.grid.major = ggplot2::element_line(color = "grey88", linewidth = 0.3),
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.margin      = ggplot2::margin(14, 14, 10, 10)
+    )
+
   # --- Build plot -----------------------------------------------------
+  taus_order <- sort(unique(all_regions$tau))
+  n_taus     <- length(taus_order)
+  palette    <- full_palette[seq_len(n_taus)]
+
+  # Darker border variants for contour outlines
+  border_palette <- vapply(palette, function(hex) {
+    rgb_val <- grDevices::col2rgb(hex)[, 1] / 255
+    grDevices::rgb(rgb_val[1] * border_dark, rgb_val[2] * border_dark,
+                   rgb_val[3] * border_dark)
+  }, character(1), USE.NAMES = FALSE)
+
   if (isTRUE(paintedArea)) {
     # --- Painted-area style -------------------------------------------
-    taus_order <- sort(unique(all_regions$tau))
-    n_taus     <- length(taus_order)
-
-    # Dark grayscale palette: from medium-dark gray to near-black
-    palette <- grDevices::gray.colors(n_taus, start = 0.45, end = 0.05)
-
-    # Legend text matches fill colours
-    legend_palette <- palette
-
     g <- ggplot2::ggplot(df_points, ggplot2::aes(x = .data$y1, y = .data$y2)) +
-      ggplot2::geom_point(alpha = point_alpha, color = "gray40",
-                          size = point_size) +
-      base_theme
+      refined_theme +
+      ggplot2::geom_point(alpha = point_alpha * pt_alpha_m, color = pt_col,
+                          size = point_size * pt_size_m, shape = 16)
 
-    for (i in seq_along(taus_order)) {
+    for (i in seq_len(n_taus)) {
       reg <- all_regions[all_regions$tau == taus_order[i], , drop = FALSE]
-
+      contour_df <- data.frame(
+        x = c(reg$y1, rev(reg$y1), reg$y1[1]),
+        y = c(reg$min, rev(reg$max), reg$min[1])
+      )
       g <- g +
         ggplot2::geom_ribbon(
-          data        = reg,
+          data = reg,
           ggplot2::aes(x = .data$y1, ymin = .data$min, ymax = .data$max),
-          alpha       = 0.45,
-          fill        = palette[i],
-          inherit.aes = FALSE
+          alpha = ribbon_alpha, fill = palette[i], inherit.aes = FALSE
         ) +
         ggplot2::geom_path(
-          data = data.frame(
-            x = c(reg$y1, rev(reg$y1), reg$y1[1]),
-            y = c(reg$min, rev(reg$max), reg$min[1])
-          ),
+          data = contour_df,
           ggplot2::aes(x = .data$x, y = .data$y),
-          color       = palette[i],
-          linewidth   = line_size,
+          color = border_palette[i], linewidth = line_size * lw_mult,
           inherit.aes = FALSE
         )
     }
 
-    legend_labels <- paste0("tau = ", taus_order,
-                            " (~", round((1 - taus_order) * 100), "%)")
+    # In-plot colour-coded legend
+    legend_labels <- paste0("\u03C4 = ", format(taus_order, nsmall = 2))
+
+    box_x     <- y1range[1] + diff(y1range) * 0.01
+    box_y_top <- y2range[2] - diff(y2range) * 0.01
+    box_y_bot <- box_y_top - diff(y2range) * 0.045 * (n_taus + 0.5)
+    box_x_end <- box_x + diff(y1range) * 0.18
 
     g <- g +
       ggplot2::annotate(
+        "rect", xmin = box_x, xmax = box_x_end,
+        ymin = box_y_bot, ymax = box_y_top,
+        fill = "white", alpha = 0.80, color = "grey80", linewidth = 0.3
+      ) +
+      ggplot2::annotate(
         "text",
-        x        = y1range[1] + diff(y1range) * 0.02,
-        y        = y2range[2] - diff(y2range) * 0.04 * seq_len(n_taus),
-        label    = legend_labels,
-        color    = legend_palette,
-        hjust    = 0,
-        size     = 3.5,
-        fontface = "bold"
+        x = box_x + diff(y1range) * 0.02,
+        y = box_y_top - diff(y2range) * 0.045 * seq_len(n_taus),
+        label = legend_labels, color = palette,
+        hjust = 0, size = 3.5, fontface = "bold"
       ) +
       ggplot2::labs(
-        x     = response[1],
-        y     = response[2],
+        x     = response[1], y = response[2],
         title = if (is.null(main)) "Bivariate Quantile Regions" else main
-      ) +
-      ggplot2::theme(
-        plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
-        axis.title = ggplot2::element_text(size = 12),
-        axis.text  = ggplot2::element_text(size = 10)
       )
 
   } else {
     # --- Contour-only style -------------------------------------------
-    contour_data <- do.call(rbind, lapply(unique(all_regions$tau), function(tv) {
+    contour_data <- do.call(rbind, lapply(taus_order, function(tv) {
       reg <- all_regions[all_regions$tau == tv, , drop = FALSE]
       data.frame(
-        x    = c(reg$y1, rev(reg$y1), reg$y1[1]),
-        y    = c(reg$min, rev(reg$max), reg$min[1]),
+        x = c(reg$y1, rev(reg$y1), reg$y1[1]),
+        y = c(reg$min, rev(reg$max), reg$min[1]),
         taus = tv
       )
     }))
 
-    .contour_color_scale <- switch(color_palette,
-                                   "blues"   = ggplot2::scale_color_brewer(palette = "Blues",
-                                                                           name = expression(tau)),
-                                   "set1"    = ggplot2::scale_color_brewer(palette = "Set1",
-                                                                           name = expression(tau)),
-                                   "viridis" = ggplot2::scale_color_viridis_d(option = "D",
-                                                                              name = expression(tau)),
-                                   "dark2"   = ggplot2::scale_color_brewer(palette = "Dark2",
-                                                                           name = expression(tau))
-    )
-
     g <- ggplot2::ggplot() +
-      base_theme +
+      refined_theme +
       ggplot2::geom_point(
-        data  = df_points,
-        ggplot2::aes(x = .data$y1, y = .data$y2),
-        alpha = point_alpha,
-        color = "gray50",
-        size  = point_size
+        data = df_points, ggplot2::aes(x = .data$y1, y = .data$y2),
+        alpha = point_alpha * pt_alpha_m, color = pt_col,
+        size = point_size * pt_size_m, shape = 16
       ) +
       ggplot2::geom_path(
         data = contour_data,
         ggplot2::aes(x = .data$x, y = .data$y,
-                     color    = factor(.data$taus),
+                     color = factor(.data$taus),
                      linetype = factor(.data$taus)),
-        linewidth = line_size
+        linewidth = line_size * lw_mult
       ) +
-      .contour_color_scale +
+      ggplot2::scale_color_manual(
+        name = expression(tau), values = palette
+      ) +
       ggplot2::scale_linetype_discrete(name = expression(tau)) +
       ggplot2::labs(
-        x     = response[1],
-        y     = response[2],
+        x     = response[1], y = response[2],
         title = if (is.null(main)) "Bivariate Quantile Regions" else main
       ) +
       ggplot2::theme(
-        plot.title      = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
-        axis.title      = ggplot2::element_text(size = 12),
-        axis.text       = ggplot2::element_text(size = 10),
-        legend.position = "bottom",
-        legend.box      = "vertical"
+        legend.position   = "bottom",
+        legend.box        = "horizontal",
+        legend.title      = ggplot2::element_text(size = 11, face = "italic"),
+        legend.text       = ggplot2::element_text(size = 10),
+        legend.key.width  = ggplot2::unit(1.5, "cm"),
+        legend.background = ggplot2::element_rect(fill = "white", color = "grey85",
+                                                   linewidth = 0.3),
+        legend.margin     = ggplot2::margin(5, 8, 5, 8)
       )
   }
 
