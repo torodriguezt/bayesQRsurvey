@@ -262,6 +262,20 @@ plotQuantileRegion <- function(model,
     all_cols <- grDevices::hcl.colors(n_taus + n_extra, "Blues 3")
     palette  <- all_cols[(n_extra + 1L):(n_taus + n_extra)]
 
+    # Darker palette for legend text so labels are readable on white bg
+    legend_cols <- grDevices::hcl.colors(n_taus + n_extra, "Blues 3",
+                                         alpha = NULL)
+    # Darken by shifting luminance down
+    legend_palette <- vapply(palette, function(col) {
+      rgb_val <- grDevices::col2rgb(col)
+      grDevices::rgb(
+        pmax(rgb_val[1, ] - 60L, 0L),
+        pmax(rgb_val[2, ] - 60L, 0L),
+        pmax(rgb_val[3, ] - 60L, 0L),
+        maxColorValue = 255
+      )
+    }, character(1), USE.NAMES = FALSE)
+
     g <- ggplot2::ggplot(df_points, ggplot2::aes(x = .data$y1, y = .data$y2)) +
       ggplot2::geom_point(alpha = point_alpha, color = "gray40",
                           size = point_size) +
@@ -299,7 +313,7 @@ plotQuantileRegion <- function(model,
         x        = y1range[1] + diff(y1range) * 0.02,
         y        = y2range[2] - diff(y2range) * 0.04 * seq_len(n_taus),
         label    = legend_labels,
-        color    = palette,
+        color    = legend_palette,
         hjust    = 0,
         size     = 3.5,
         fontface = "bold"
