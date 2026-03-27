@@ -250,52 +250,87 @@ print.summary.bqr.svy <- function(x, ...) {
 
 #' @noRd
 #' @exportS3Method print summary.mo.bqr.svy
-print.summary.mo.bqr.svy <- function(x, ...) {
+print.summary.mo.bqr.svy <- function(x, max_dir = 8, ...) {
   stopifnot(inherits(x, "summary.mo.bqr.svy"))
-  dig <- x$digits
+  dig  <- x$digits
+  rule <- strrep("\u2500", 56)
 
-  cat("Bayesian Quantile Regression (EM algorithm)\n")
-  cat("--------------------------------------------\n")
+  # --- Header ---
+  cat("\n")
+  cat("  Multiple-Output Bayesian Quantile Regression (Summary)\n")
+  cat("  ", rule, "\n", sep = "")
+
   qs <- paste(formatC(x$quantiles, format = "f", digits = 3), collapse = ", ")
-  cat("Quantile", if (length(x$quantiles) > 1) "s" else "", ": tau = ", qs, "\n", sep = "")
-  cat("Posterior mode estimates (MAP)\n")
-  cat("Algorithm: EM\n\n", sep = "")
+  cat("  Quantiles  : ", qs, "\n", sep = "")
+  cat("  Directions : ", x$n_dir, "\n", sep = "")
+  if (!is.null(x$n_obs))
+    cat("  Sample     : ", x$n_obs, " obs", sep = "")
+  if (!is.null(x$response_dim))
+    cat(", ", x$response_dim, " responses", sep = "")
+  cat("\n")
+  cat("  Estimation : EM (posterior mode / MAP)\n")
+  cat("  ", rule, "\n", sep = "")
 
-  # Fixed: robust ordering by tau, then direction id
+  # --- Order blocks by tau, then direction ---
   ord <- order(
     vapply(x$blocks, function(b) b$tau,    numeric(1)),
     vapply(x$blocks, function(b) b$dir_id, numeric(1))
   )
   blocks <- x$blocks[ord]
 
-  for (b in blocks) {
-    cat("Quantile: tau = ", formatC(b$tau, format = "f", digits = 3),
-        "   |   Direction ", b$dir_id, "\n", sep = "")
-    has_tol <- is.finite(x$tolerance)
-    if (has_tol && !is.na(b$iter)) {
-      cat("EM status: ",
-          if (isTRUE(b$converged)) "converged" else "not converged",
-          " in ", b$iter, " iterations, tol=",
-          formatC(x$tolerance, format = "g", digits = 3),
-          "\n", sep = "")
-    } else if (!is.na(b$iter)) {
-      cat("EM status: ",
-          if (isTRUE(b$converged)) "converged" else "not converged",
-          " in ", b$iter, " iterations\n", sep = "")
-    } else {
-      cat("EM status: ",
-          if (isTRUE(b$converged)) "converged" else "not converged",
-          "\n", sep = "")
+  # --- Group blocks by tau ---
+  tau_vals <- unique(vapply(blocks, function(b) b$tau, numeric(1)))
+
+  for (tau in tau_vals) {
+    tau_blocks <- blocks[vapply(blocks, function(b) b$tau == tau, logical(1))]
+    n_dir <- length(tau_blocks)
+    tau_lab <- formatC(tau, format = "f", digits = 3)
+
+    # Build coefficient matrix (rows = params, cols = dirs)
+    param_names <- tau_blocks[[1]]$coef_tab$parameter
+    coef_mat <- matrix(NA_real_, nrow = length(param_names), ncol = n_dir)
+    rownames(coef_mat) <- param_names
+    colnames(coef_mat) <- paste0("dir", vapply(tau_blocks, function(b) b$dir_id, numeric(1)))
+    for (j in seq_along(tau_blocks))
+      coef_mat[, j] <- tau_blocks[[j]]$coef_tab$MAP
+
+    cat("\n  Coefficients (tau = ", tau_lab, ")\n", sep = "")
+    .print_coef_table(coef_mat, digits = dig, max_dir = max_dir, indent = 4)
+
+    # --- Convergence summary ---
+    iters  <- vapply(tau_blocks, function(b)
+      if (!is.na(b$iter)) b$iter else NA_integer_, numeric(1))
+    conv   <- vapply(tau_blocks, function(b) isTRUE(b$converged), logical(1))
+    sigmas <- vapply(tau_blocks, function(b) b$sigma, numeric(1))
+
+    n_conv <- sum(conv)
+    n_tot  <- length(conv)
+    valid_iters <- iters[!is.na(iters)]
+
+    cat("\n  EM convergence: ", n_conv, "/", n_tot, " directions converged\n", sep = "")
+    if (length(valid_iters) > 0)
+      cat("  Iterations    : min = ", min(valid_iters),
+          ", median = ", stats::median(valid_iters),
+          ", max = ", max(valid_iters), "\n", sep = "")
+
+    # Show non-converged directions if any
+    if (n_conv < n_tot) {
+      not_conv <- which(!conv)
+      cat("  Not converged : dir ",
+          paste(not_conv, collapse = ", "), "\n", sep = "")
     }
 
-    cat("\nCoefficients (posterior mode / MAP):\n")
-    tab <- b$coef_tab
-    tab$MAP <- ifelse(is.finite(tab$MAP), round(tab$MAP, dig), tab$MAP)
-    print(tab, row.names = FALSE)
-
-    cat("\nScale sigma: ", round(b$sigma, dig), " (posterior mode)\n\n", sep = "")
+    # Sigma summary
+    unique_sig <- unique(round(sigmas, dig))
+    if (length(unique_sig) == 1L) {
+      cat("  Sigma         : ", unique_sig, " (all directions)\n", sep = "")
+    } else {
+      cat("  Sigma         : min = ", min(sigmas),
+          ", max = ", max(sigmas), "\n", sep = "")
+    }
   }
 
+  cat("\n")
   invisible(x)
 }
 
@@ -388,8 +423,6 @@ summary.list <- function(object, ..., methods = NULL, target_tau = 0.5, digits =
 #' @param x An object of class \code{"bqr.svy"} or \code{"mo.bqr.svy"},
 #'   returned by \code{\link{bqr.svy}} or \code{\link{mo.bqr.svy}}.
 #' @param digits Integer specifying the number of decimal places to print. Defaults to \code{3}.
-#' @param max_rows Optional integer indicating the maximum number of coefficient rows
-#'   to display for each quantile. If \code{NULL}, all rows are printed (only used in \code{print.mo.bqr.svy}).
 #' @param ... Additional arguments that are passed to the generic \code{print()} function.
 #'
 #' @name print.bayesQRsurvey
@@ -521,67 +554,75 @@ sigma.mo.bqr.svy <- function(x) {
 #' @rdname print.bayesQRsurvey
 #' @title Print a \code{mo.bqr.svy} model
 #' @exportS3Method print mo.bqr.svy
-print.mo.bqr.svy <- function(x, digits = 3, max_rows = NULL, ...) {
-  # Header
-  cat("Multiple-Output Bayesian Quantile Regression (survey data)\n")
-  cat("Algorithm :", x$algorithm, "\n")
-  cat("Quantiles :", paste(formatC(x$quantile, digits = 3, format = "f"), collapse = " "), "\n")
-  cat("Formula   :", deparse(x$formula), "\n")
-  cat("Directions:", x$n_dir, "\n")
-  if (!is.null(x$n_obs) && !is.null(x$response_dim)) {
-    cat("N x d     :", x$n_obs, "x", x$response_dim, "\n")
-  }
+print.mo.bqr.svy <- function(x, ...) {
+  rule <- strrep("\u2500", 56)
+
   cat("\n")
+  cat("  Multiple-Output Bayesian Quantile Regression\n")
+  cat("  ", rule, "\n", sep = "")
 
-  # Coefficients matrices per tau
-  is_new_structure <- is.list(x$coefficients) && all(vapply(x$coefficients, is.matrix, logical(1)))
-  if (!is_new_structure) {
-    cat("Note: coefficients stored in legacy format (single vector).\n",
-        "      Updating mo.bqr.svy will organize by quantile and direction.\n\n", sep = "")
-    print(round(x$coefficients, digits))
-  } else {
-    cat("Coefficients per quantile (rows = coefficients, columns = directions)\n")
-    if (!is.null(max_rows) && (!is.numeric(max_rows) || length(max_rows) != 1 || max_rows < 1)) {
-      warning("'max_rows' should be a positive scalar; ignoring.", call. = FALSE)
-      max_rows <- NULL
-    }
-    for (qi in seq_along(x$coefficients)) {
-      tau_lab <- if (!is.null(names(x$coefficients)[qi])) names(x$coefficients)[qi] else {
-        paste0("tau=", formatC(x$quantile[qi], digits = 3, format = "f"))
-      }
-      cat("\n", tau_lab, "\n", sep = "")
-      cat(strrep("-", nchar(tau_lab)), "\n", sep = "")
-      M <- x$coefficients[[qi]]
-      M_to_print <- if (!is.null(max_rows) && nrow(M) > max_rows) M[seq_len(max_rows), , drop = FALSE] else M
-      print(round(M_to_print, digits))
-      if (!is.null(max_rows) && nrow(M) > max_rows) {
-        cat(sprintf("... %d more rows not shown (use max_rows = NULL to show all).\n", nrow(M) - max_rows))
-      }
-    }
+  qs <- paste(formatC(x$quantile, digits = 3, format = "f"), collapse = ", ")
+  cat("  Formula    : ", deparse(x$formula), "\n", sep = "")
+  cat("  Quantiles  : ", qs, "\n", sep = "")
+  cat("  Directions : ", x$n_dir, "\n", sep = "")
+  if (!is.null(x$n_obs) && !is.null(x$response_dim))
+    cat("  Sample     : ", x$n_obs, " obs, ", x$response_dim, " responses\n", sep = "")
+  if (!is.null(x$estimate_sigma) && isFALSE(x$estimate_sigma))
+    cat("  Scale      : sigma fixed at 1\n", sep = "")
+
+  # Number of coefficients per direction
+  is_new <- is.list(x$coefficients) &&
+    all(vapply(x$coefficients, is.matrix, logical(1)))
+  if (is_new) {
+    n_coef <- nrow(x$coefficients[[1]])
+    cat("  Coefficients: ", n_coef, " per direction\n", sep = "")
   }
 
-  # Sigma (point estimates) by tau & direction, using the extractor
-  cat("\nScale (sigma) by quantile and direction:\n")
-  sig <- sigma.mo.bqr.svy(x)
-  for (qi in seq_along(sig)) {
-    tau_lab <- names(sig)[qi]
-    cat(" ", tau_lab, ":\n", sep = "")
-    v <- sig[[qi]]
-    if (all(is.na(v))) {
-      cat("   not available\n")
-    } else {
-      # print as a compact named vector
-      out <- paste0(names(v), "=", formatC(v, format = "f", digits = digits))
-      cat("   ", paste(out, collapse = ", "), "\n", sep = "")
-    }
-  }
-
-  # Note
-  if (!is.null(x$estimate_sigma)) {
-    if (isFALSE(x$estimate_sigma)) {
-      cat("\nNote: sigma is fixed at 1.\n")
-    }
-  }
+  cat("  ", rule, "\n", sep = "")
+  cat("  Use summary() for coefficients and convergence details.\n\n")
 
   invisible(x)
+}
+
+# Helper: print coefficient table transposed (directions as rows)
+# so it fits in a standard console width
+#' @noRd
+.print_coef_table <- function(M, digits = 3, max_dir = 8, indent = 4) {
+  n_dir   <- ncol(M)
+  n_param <- nrow(M)
+  pad     <- strrep(" ", indent)
+
+  param_names <- rownames(M)
+  if (is.null(param_names)) param_names <- paste0("V", seq_len(n_param))
+  dir_names <- colnames(M)
+  if (is.null(dir_names)) dir_names <- paste0("dir", seq_len(n_dir))
+
+  # Transpose: directions as rows, parameters as columns
+  Mt <- t(round(M, digits))
+  vals <- format(Mt, digits = digits, nsmall = digits, trim = TRUE)
+
+  # Column widths
+  col_w <- pmax(nchar(param_names),
+                apply(vals, 2, function(v) max(nchar(v))))
+  dir_w <- max(nchar(dir_names), 3)
+
+  # How many to show
+  n_show <- min(n_dir, max_dir)
+
+  # Header
+  cat(pad, formatC("", width = dir_w), sep = "")
+  for (j in seq_len(n_param))
+    cat("  ", formatC(param_names[j], width = col_w[j], format = "s"), sep = "")
+  cat("\n")
+
+  # Rows
+  for (i in seq_len(n_show)) {
+    cat(pad, formatC(dir_names[i], width = dir_w, format = "s"), sep = "")
+    for (j in seq_len(n_param))
+      cat("  ", formatC(vals[i, j], width = col_w[j], format = "s"), sep = "")
+    cat("\n")
+  }
+  if (n_dir > max_dir)
+    cat(pad, "... ", n_dir - max_dir, " more directions ",
+        "(use print(x, max_dir = ", n_dir, ") to show all)\n", sep = "")
 }

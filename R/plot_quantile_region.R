@@ -238,8 +238,8 @@ plotQuantileRegion <- function(model,
   # --- Plot style settings ----------------------------------------------
   full_palette <- c("#00E5FF", "#FF1744", "#76FF03", "#FFEA00",
                     "#D500F9", "#FF9100", "#69F0AE", "#448AFF")
-  pt_col       <- "grey55"
-  pt_alpha_m   <- 0.35
+  pt_col       <- "grey25"
+  pt_alpha_m   <- 0.6
   pt_size_m    <- 0.8
   border_dark  <- 0.85
   ribbon_alpha <- 0.35
@@ -296,27 +296,61 @@ plotQuantileRegion <- function(model,
         )
     }
 
-    # In-plot colour-coded legend
-    legend_labels <- paste0("\u03C4 = ", format(taus_order, nsmall = 2))
+    # In-plot legend with colour swatches
+    legend_labels <- paste0("tau = ", format(taus_order, nsmall = 2))
 
-    box_x     <- y1range[1] + diff(y1range) * 0.01
-    box_y_top <- y2range[2] - diff(y2range) * 0.01
-    box_y_bot <- box_y_top - diff(y2range) * 0.045 * (n_taus + 0.5)
-    box_x_end <- box_x + diff(y1range) * 0.18
+    dx <- diff(y1range)
+    dy <- diff(y2range)
+    row_h   <- dy * 0.055
+    swatch  <- dx * 0.03
+    pad_x   <- dx * 0.015
+    pad_y   <- dy * 0.015
+    title_h <- row_h * 0.8
+
+    box_x     <- y1range[1] + dx * 0.02
+    box_y_top <- y2range[2] - dy * 0.02
+    box_y_bot <- box_y_top - title_h - pad_y - row_h * n_taus - pad_y
+    box_x_end <- box_x + pad_x + swatch + dx * 0.01 + dx * 0.12 + pad_x
+
+    # Vertical positions: title row, then one row per quantile
+    title_y  <- box_y_top - pad_y - title_h * 0.5
+    row_y    <- box_y_top - pad_y - title_h - pad_y * 0.5 -
+                row_h * (seq_len(n_taus) - 0.5)
+    swatch_x <- box_x + pad_x
+    label_x  <- swatch_x + swatch + dx * 0.01
 
     g <- g +
+      # Box background
       ggplot2::annotate(
         "rect", xmin = box_x, xmax = box_x_end,
         ymin = box_y_bot, ymax = box_y_top,
-        fill = "white", alpha = 0.80, color = "grey80", linewidth = 0.3
+        fill = "white", alpha = 0.90, color = "grey70", linewidth = 0.4
       ) +
+      # Title
       ggplot2::annotate(
-        "text",
-        x = box_x + diff(y1range) * 0.02,
-        y = box_y_top - diff(y2range) * 0.045 * seq_len(n_taus),
-        label = legend_labels, color = palette,
-        hjust = 0, size = 3.5, fontface = "bold"
-      ) +
+        "text", x = box_x + (box_x_end - box_x) / 2, y = title_y,
+        label = "Quantile", hjust = 0.5, size = 3.5,
+        fontface = "bold", color = "grey25"
+      )
+
+    # Add a colour swatch + label for each quantile level
+    for (i in seq_len(n_taus)) {
+      g <- g +
+        ggplot2::annotate(
+          "rect",
+          xmin = swatch_x, xmax = swatch_x + swatch,
+          ymin = row_y[i] - row_h * 0.3, ymax = row_y[i] + row_h * 0.3,
+          fill = palette[i], alpha = 0.7,
+          color = border_palette[i], linewidth = 0.5
+        ) +
+        ggplot2::annotate(
+          "text", x = label_x, y = row_y[i],
+          label = legend_labels[i], hjust = 0, vjust = 0.5,
+          size = 3.3, color = "grey20"
+        )
+    }
+
+    g <- g +
       ggplot2::labs(
         x     = response[1], y = response[2],
         title = if (is.null(main)) "Bivariate Quantile Regions" else main

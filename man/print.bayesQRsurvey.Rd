@@ -9,7 +9,7 @@
 \usage{
 \method{print}{bqr.svy}(x, digits = 3, ...)
 
-\method{print}{mo.bqr.svy}(x, digits = 3, max_rows = NULL, ...)
+\method{print}{mo.bqr.svy}(x, ...)
 }
 \arguments{
 \item{x}{An object of class \code{"bqr.svy"} or \code{"mo.bqr.svy"},
@@ -18,9 +18,6 @@ returned by \code{\link{bqr.svy}} or \code{\link{mo.bqr.svy}}.}
 \item{digits}{Integer specifying the number of decimal places to print. Defaults to \code{3}.}
 
 \item{...}{Additional arguments that are passed to the generic \code{print()} function.}
-
-\item{max_rows}{Optional integer indicating the maximum number of coefficient rows
-to display for each quantile. If \code{NULL}, all rows are printed (only used in \code{print.mo.bqr.svy}).}
 }
 \description{
 \code{print.bayesQRsurvey} is an S3 method that prints the content of an S3 object of class

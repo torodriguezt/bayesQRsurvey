@@ -13,8 +13,6 @@ plotQuantileRegion(
   paintedArea = TRUE,
   range_y = NULL,
   main = NULL,
-  theme_style = c("bw", "minimal", "classic", "light"),
-  color_palette = c("blues", "set1", "viridis", "dark2"),
   point_alpha = 0.3,
   point_size = 1.2,
   line_size = 0.8,
@@ -46,12 +44,6 @@ respectively.  If \code{NULL}, the ranges are computed from the data
 with a 15 percent margin.}
 
 \item{main}{Optional character string for the plot title.}
-
-\item{theme_style}{Character; one of \code{"minimal"}, \code{"classic"},
-\code{"bw"}, \code{"light"} (default = \code{"bw"}).}
-
-\item{color_palette}{Character; one of \code{"blues"}, \code{"set1"},
-\code{"viridis"}, \code{"dark2"} (default = \code{"blues"}).}
 
 \item{point_alpha}{Numeric in \code{[0, 1]}; transparency for the
 observed-data point cloud (default = 0.3).}
