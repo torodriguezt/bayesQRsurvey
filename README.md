@@ -1,127 +1,64 @@
-# bayesQRsurvey: Bayesian Weighted Quantile Regression
+# bayesQRsurvey
 
-[![CRAN published](https://img.shields.io/badge/CRAN-published-brightgreen)](https://CRAN.R-project.org/package=bayesQRsurvey)
+[![CRAN](https://img.shields.io/badge/CRAN-published-brightgreen)](https://CRAN.R-project.org/package=bayesQRsurvey)
 
-**bayesQRsurvey** is an R package for **Bayesian weighted quantile regression** for complex survey designs. The package provides both single and multiple-output quantile regression estimation using efficient MCMC and EM algorithms with fast C++ implementations.
+Bayesian quantile regression for complex survey data with informative sampling. Supports single-output (MCMC) and multiple-output (EM) estimation with survey weights.
 
----
-
-## ⚙️ Features
-
-- **Survey weights**: Handles complex survey designs with observation weights
-- **Multiple algorithms**: MCMC (ALD, Score, Approximate) and EM methods  
-- **Fast computation**: C++ implementations using Rcpp, RcppEigen, and RcppArmadillo
-- **Comprehensive output**: Detailed summaries with convergence diagnostics
----
-
-## 🚀 Performance Benchmark
-
-The following benchmark compares the R and C++ versions of the main algorithms on a simulated dataset with 100,000 observations and 10 predictors.
-
-| Algorithm            | R Time (seg) | C++ Time (seg) | R RAM  | C++ RAM | Speedup Factor | Memory Saving |
-|----------------------|--------------|----------------|--------|---------|----------------|----------------|
-| EM_BWQR_AL_MO        | 2.44         | 0.0032         | 2.3 GB | 190 MB  | ×769           | ~12×           |
-| MCMC_BWQR_AL         | 12.3         | 0.01           | 2.0 GB | 50 MB   | ×1100          | ~40×           |
-| MCMC_BWQR_AP         | 21.78        | 2.81           | ? GB   | ? GB    | ×7.8           | ?              |
-| MCMC_BWQR_SL         | 9.7          | 1.4            | ?      | ?       | ×7.1           | ~7.2×          |
-
-> Test environment: R 4.4.2, Windows 11, Intel i5 13600-K, 32 GB RAM
-
----
-
-## 📦 Installation
-
-### From GitHub (development version)
+## Installation
 
 ```r
-# Install 'devtools' (or 'remotes') once
-install.packages("devtools")
+# CRAN
+install.packages("bayesQRsurvey")
 
-# Install the latest bayesQRsurvey from GitHub
+# Development version
 devtools::install_github("torodriguezt/bayesQRsurvey")
-
-# Load the package
-library(bayesQRsurvey)
 ```
 
----
+## Usage
 
-## 🎯 Main Functions
-
-### Quantile Regression: `bqr.svy()`
-
-Fits Bayesian quantile regression for a single quantile using MCMC methods:
-
-- **ALD (Asymmetric Laplace Distribution)**
-- **Score**
-- **Approximate**
+### Single-output quantile regression
 
 ```r
 library(bayesQRsurvey)
 
-# Simulate data
-set.seed(123)
-n <- 100
-x1 <- rnorm(n)
-x2 <- runif(n) 
-y <- 1 + 2*x1 - 0.5*x2 + rnorm(n)
-weights <- runif(n, 0.5, 2)
-data <- data.frame(y, x1, x2)
+fit <- bqr.svy(
+  y ~ x1 + x2,
+  weights  = data$weight,
+  data     = data,
+  quantile = 0.5,
+  method   = "ald"
+)
 
-# Fit single quantile regression
-fit <- bqr.svy(y ~ x1 + x2, weights = weights, data = data, 
-               quantile = 0.5, method = "ald", niter = 5000, burnin = 2500)
 summary(fit)
-```
-
-### Multiple-output Quantile Regression: `mo.bqr.svy()`
-
-Fits Bayesian quantile regression for multiple quantiles using EM algorithm:
-
-```r
-# Fit multiple quantile regression
-fit_multi <- mo.bqr.svy(y ~ x1 + x2, weights = weights, data = data, 
-                        quantile = c(0.25, 0.5, 0.75), algorithm = 'em')
-summary(fit_multi)
-```
-
-### Visualization: `plot()`
-
-Create plots showing fitted quantile curves with credible intervals:
-
-```r
-# Plot results
 plot(fit)
-plot(fit_multi)
 ```
 
----
+### Multiple-output quantile regression
 
-## 📚 Methods
+```r
+fit_mo <- mo.bqr.svy(
+  cbind(y1, y2) ~ x1 + x2,
+  weights  = data$weight,
+  data     = data,
+  quantile = c(0.05, 0.10, 0.25),
+  n_dir    = 12
+)
 
-The package implements methods based on:
+summary(fit_mo)
+plotQuantileRegion(fit_mo, response = c("y1", "y2"), datafile = data)
+```
 
-- Marcus L Nascimento, Kelly C M Gonçalves, Bayesian Quantile Regression Models for Complex Survey Data Under Informative Sampling, Journal of Survey Statistics and Methodology, Volume 12, Issue 4, September 2024, Pages 1105–1130, [https://doi.org/10.1093/jssam/smae015](https://academic.oup.com/jssam/article-abstract/12/4/1105/7642687)
-- [GitHub Repository: bqr_informative_sampling](https://github.com/marcuslavagnole/bqr_informative_sampling)
+## References
 
----
+Nascimento, M. L., & Goncalves, K. C. M. (2024). Bayesian Quantile Regression Models for Complex Survey Data Under Informative Sampling. *Journal of Survey Statistics and Methodology*, 12(4), 1105--1130. [doi:10.1093/jssam/smae015](https://doi.org/10.1093/jssam/smae015)
 
-## 👥 Authors
+## Authors
 
-- **Tomás Rodríguez Taborda**  
-  Student, Department of Statistics and Department of Computer and Decision Sciences, Universidad Nacional de Colombia (UNAL)
+- **Tomas Rodriguez Taborda** -- Universidad Nacional de Colombia (UNAL)
+- **Johnatan Cardona Jimenez** -- Universidad Nacional de Colombia (UNAL)
+- **Marcus L. Nascimento** -- Getulio Vargas Foundation (FGV EMAp)
+- **Kelly Cristina Mota Goncalves** -- Federal University of Rio de Janeiro (UFRJ)
 
-- **Johnatan Cardona Jiménez**  
-  Assistant Professor, Department of Statistics, Universidad Nacional de Colombia (UNAL)
-  
-- **Marcus L. Nascimento**  
-  Postdoctoral Researcher, School of Applied Mathematics, Getulio Vargas Foundation (FGV EMAp)
+## License
 
-- **Kelly Cristina Mota Gonçalves**  
-  Associate Professor, Department of Statistical Methods, Federal University of Rio de Janeiro (UFRJ)
-
----
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT
