@@ -19,3 +19,8 @@
 ^\.next$
 ^\.vscode$
 ^data-raw$
+^test_styles\.R$
+^examples_univariate\.R$
+^examples_multiple_output\.R$
+\.pdf$
+^\.claude$

@@ -1,6 +1,6 @@
 Package: bayesQRsurvey
 Title: Bayesian Quantile Regression Models for Complex Survey Data Analysis
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: 
     c(
         person("Tomás", "Rodríguez Taborda", email = "torodriguezt@unal.edu.co", role = c("aut", "cre")),
@@ -15,6 +15,8 @@ Description: Provides Bayesian quantile regression models for complex survey dat
     are called from 'R'. See Nascimento and Gonçalves (2024) <doi:10.1093/jssam/smae015> 
     and Nascimento and Gonçalves (2025, in press) <https://academic.oup.com/jssam>.
 License: MIT + file LICENSE
+LazyData: true
+LazyDataCompression: gzip
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3

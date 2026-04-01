@@ -14,7 +14,7 @@ The dataset comprises 985 observations and 8 variables on children aged 0-60 mon
     \item \bold{wgt_ind} : weight-for-age index
     \item \bold{hgt_ind} : height-for-age index
     \item \bold{ruc} : rural-urban classification (urban = 1 and rural = 2) 
-    \item \bold{sex} : boy = 1 and girl = 0
+    \item \bold{sex} : factor with levels \code{0} (girl) and \code{1} (boy)
     \item \bold{age} : age in months
     \item \bold{dweight} : sampling weights
   }

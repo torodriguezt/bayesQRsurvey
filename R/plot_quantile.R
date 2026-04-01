@@ -166,7 +166,13 @@ plot.bqr.svy <- function(
     if (!is.null(at_vals)) base_vals[names(at_vals)] <- at_vals
     nd <- mf[rep(1, grid_len), , drop = FALSE]
     for (nm in names(base_vals)) {
-      if (nm %in% names(nd) && nm != pred && nm != resp) nd[[nm]] <- base_vals[[nm]]
+      if (nm %in% names(nd) && nm != pred && nm != resp) {
+        if (is.factor(mf[[nm]])) {
+          nd[[nm]] <- factor(base_vals[[nm]], levels = levels(mf[[nm]]))
+        } else {
+          nd[[nm]] <- base_vals[[nm]]
+        }
+      }
     }
     if (!is.numeric(mf[[pred]])) stop("The 'predictor' must be numeric.", call. = FALSE)
     xr <- range(mf[[pred]], na.rm = TRUE)
@@ -176,15 +182,35 @@ plot.bqr.svy <- function(
 
   # Theme and color setup for ggplot
   .get_theme <- function(style) {
-    switch(style,
+    base <- switch(style,
            "minimal" = ggplot2::theme_minimal(),
            "classic" = ggplot2::theme_classic(),
            "bw" = ggplot2::theme_bw(),
            "light" = ggplot2::theme_light()
     )
+    base + ggplot2::theme(
+      plot.title       = ggplot2::element_text(size = 13, face = "bold",
+                                                hjust = 0, color = "grey15"),
+      plot.subtitle    = ggplot2::element_text(size = 10, hjust = 0,
+                                                color = "grey45",
+                                                margin = ggplot2::margin(2, 0, 8, 0)),
+      axis.title       = ggplot2::element_text(size = 12, color = "grey20"),
+      axis.text        = ggplot2::element_text(size = 10, color = "grey40"),
+      panel.grid.major = ggplot2::element_line(color = "grey90", linewidth = 0.3),
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.margin      = ggplot2::margin(12, 12, 8, 8)
+    )
   }
 
+  # Single-color accent for 1-tau plots; multi-tau uses the palette
+  accent_col   <- "#2171B5"   # strong blue
+  accent_fill  <- "#6BAED6"   # lighter blue
+  ref_col      <- "#D6604D"   # muted red for reference lines
+
   .get_color_scale <- function(palette, n) {
+    if (n == 1L) {
+      return(ggplot2::scale_color_manual(values = accent_col))
+    }
     switch(palette,
            "viridis" = ggplot2::scale_color_viridis_d(option = "D"),
            "plasma" = ggplot2::scale_color_viridis_d(option = "C"),
@@ -193,7 +219,10 @@ plot.bqr.svy <- function(
     )
   }
 
-  .get_fill_scale <- function(palette) {
+  .get_fill_scale <- function(palette, n = 2L) {
+    if (n == 1L) {
+      return(ggplot2::scale_fill_manual(values = accent_fill))
+    }
     switch(palette,
            "viridis" = ggplot2::scale_fill_viridis_d(option = "D", alpha = 0.3),
            "plasma" = ggplot2::scale_fill_viridis_d(option = "C", alpha = 0.3),
@@ -236,7 +265,7 @@ plot.bqr.svy <- function(
         df <- data.frame(
           x = xg,
           y = qmed,
-          tau = sprintf("tau = %.3f", ti),
+          tau = sprintf("%.3f", ti),
           tau_numeric = ti
         )
 
@@ -254,15 +283,15 @@ plot.bqr.svy <- function(
 
       if (show_ci) {
         p <- p + ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$y_lower, ymax = .data$y_upper,
-                                                   fill = .data$tau), alpha = 0.3)
-        p <- p + .get_fill_scale(color_palette)
+                                                   fill = .data$tau), alpha = 0.25)
+        p <- p + .get_fill_scale(color_palette, length(tau))
       }
 
       if (add_points) {
         obs_data <- data.frame(x = mf[[predictor]], y = mf[[resp]])
         p <- p + ggplot2::geom_point(data = obs_data, ggplot2::aes(x = .data$x, y = .data$y),
-                                     color = "gray30", alpha = points_alpha, size = point_size,
-                                     inherit.aes = FALSE)
+                                     color = "grey50", alpha = points_alpha, size = point_size,
+                                     shape = 16, inherit.aes = FALSE)
       }
 
       p <- p + ggplot2::geom_line(ggplot2::aes(color = .data$tau), linewidth = line_size)
@@ -272,31 +301,31 @@ plot.bqr.svy <- function(
         ggplot2::labs(
           x = predictor,
           y = resp,
-          color = "Quantile",
-          title = if (is.null(main)) {
-            if (length(tau) == 1L) sprintf("Quantile Regression Fit (tau = %.3f)", tau[1])
-            else "Quantile Regression Fits"
-          } else main
+          color = expression(tau),
+          title = if (!is.null(main)) main else "Quantile Regression Fit",
+          subtitle = if (is.null(main) && length(tau) == 1L) {
+            sprintf("tau = %.3f", tau[1])
+          } else NULL
         )
 
       if (show_ci) {
-        p <- p + ggplot2::labs(fill = "Quantile")
+        p <- p + ggplot2::labs(fill = expression(tau))
       }
 
       if (length(tau) > 1 && !combine) {
         p <- p + ggplot2::facet_wrap(~ .data$tau, scales = "free_y")
       }
 
-      p <- p + ggplot2::theme(
-        plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
-        axis.title = ggplot2::element_text(size = 12),
-        axis.text = ggplot2::element_text(size = 10),
-        legend.title = ggplot2::element_text(size = 11, face = "bold"),
-        legend.text = ggplot2::element_text(size = 10),
-        legend.position = "bottom",
-        legend.box = "horizontal",
-        panel.grid.minor = ggplot2::element_blank()
-      )
+      if (length(tau) > 1L) {
+        p <- p + ggplot2::theme(
+          legend.title = ggplot2::element_text(size = 11, face = "bold"),
+          legend.text = ggplot2::element_text(size = 10),
+          legend.position = "bottom",
+          legend.box = "horizontal"
+        )
+      } else {
+        p <- p + ggplot2::theme(legend.position = "none")
+      }
       return(p)
 
     } else {
@@ -320,12 +349,14 @@ plot.bqr.svy <- function(
     # Summary by quantile
     qsum <- lapply(tau, function(ti) {
       Dk <- .get_draws(x, tau_sel = ti)[, idx]
-      c(tau = ti,
+      data.frame(
+        tau = ti,
         med = stats::median(Dk),
-        lo  = stats::quantile(Dk, probs = ci_probs[1]),
-        hi  = stats::quantile(Dk, probs = ci_probs[2]))
+        lo  = unname(stats::quantile(Dk, probs = ci_probs[1])),
+        hi  = unname(stats::quantile(Dk, probs = ci_probs[2]))
+      )
     })
-    qsum <- as.data.frame(do.call(rbind, qsum))
+    qsum <- do.call(rbind, qsum)
 
     # Optional OLS
     ols_coef <- NA_real_
@@ -342,29 +373,33 @@ plot.bqr.svy <- function(
 
     # ggplot2 plot
     if (use_ggplot && requireNamespace("ggplot2", quietly = TRUE)) {
-      p <- ggplot2::ggplot(qsum, ggplot2::aes(x = tau, y = med)) +
-        ggplot2::geom_line(linewidth = line_size) +
-        ggplot2::geom_point(size = 2)
+      p <- ggplot2::ggplot(qsum, ggplot2::aes(x = tau, y = med))
 
-      if (isTRUE(show_ci)) {
-        p <- p + ggplot2::geom_ribbon(ggplot2::aes(ymin = lo, ymax = hi),
-                                      alpha = 0.25, inherit.aes = TRUE)
+      # Always show the credible band for quantile plots
+      p <- p + ggplot2::geom_ribbon(ggplot2::aes(ymin = lo, ymax = hi),
+                                    fill = accent_fill, alpha = 0.3,
+                                    inherit.aes = TRUE)
+
+      if (isTRUE(add_h0)) {
+        p <- p + ggplot2::geom_hline(yintercept = 0, linetype = "dashed",
+                                     color = "grey50", linewidth = 0.5)
       }
-      if (isTRUE(add_h0))  p <- p + ggplot2::geom_hline(yintercept = 0, linetype = "solid")
       if (isTRUE(add_ols) && is.finite(ols_coef)) {
-        p <- p + ggplot2::geom_hline(yintercept = ols_coef, linetype = "dotted")
+        p <- p + ggplot2::geom_hline(yintercept = ols_coef, linetype = "dotted",
+                                     color = ref_col, linewidth = 0.8)
       }
+
+      p <- p + ggplot2::geom_line(color = accent_col, linewidth = line_size)
+      p <- p + ggplot2::geom_point(color = accent_col, size = 2.5, shape = 19)
 
       p <- p + .get_theme(theme_style) +
         ggplot2::labs(
-          x = "Quantile",
+          x = expression(tau),
           y = coef_name,
-          title = if (is.null(main)) sprintf("Coefficient across quantiles: %s", coef_name) else main
+          title = if (!is.null(main)) main else "Coefficient Across Quantiles",
+          subtitle = if (is.null(main)) coef_name else NULL
         ) +
-        ggplot2::theme(
-          plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
-          legend.position = "none"
-        )
+        ggplot2::theme(legend.position = "none")
       return(p)
 
     } else {
@@ -404,22 +439,16 @@ plot.bqr.svy <- function(
       )
 
       p <- ggplot2::ggplot(trace_data, ggplot2::aes(x = .data$iteration, y = .data$value))
-      p <- p + ggplot2::geom_line(color = "steelblue", linewidth = 0.7, alpha = 0.8)
-      p <- p + ggplot2::geom_hline(yintercept = stats::median(v), color = "red",
-                                   linetype = "dashed", linewidth = 1)
+      p <- p + ggplot2::geom_line(color = accent_col, linewidth = 0.3, alpha = 0.7)
+      p <- p + ggplot2::geom_hline(yintercept = stats::median(v), color = ref_col,
+                                   linetype = "dashed", linewidth = 0.8)
 
       p <- p + .get_theme(theme_style)
       p <- p + ggplot2::labs(
         x = "Iteration",
         y = nm,
-        title = if (is.null(main)) sprintf("MCMC Trace: %s (tau = %.3f)", nm, tau[1]) else main
-      )
-
-      p <- p + ggplot2::theme(
-        plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
-        axis.title = ggplot2::element_text(size = 12),
-        axis.text = ggplot2::element_text(size = 10),
-        panel.grid.minor = ggplot2::element_blank()
+        title = if (!is.null(main)) main else "MCMC Trace",
+        subtitle = if (is.null(main)) sprintf("%s  |  tau = %.3f", nm, tau[1]) else NULL
       )
       return(p)
 
@@ -438,24 +467,25 @@ plot.bqr.svy <- function(
       v <- D[, idx]
       nm <- colnames(D)[idx]
 
+      # Credible interval bounds
+      ci_lo <- stats::quantile(v, probs = ci_probs[1])
+      ci_hi <- stats::quantile(v, probs = ci_probs[2])
+
       p <- ggplot2::ggplot(data.frame(x = v), ggplot2::aes(x = .data$x))
-      p <- p + ggplot2::geom_density(fill = "lightblue", color = "darkblue",
-                                     alpha = 0.7, linewidth = 1)
-      p <- p + ggplot2::geom_vline(xintercept = stats::median(v), color = "red",
-                                   linetype = "dashed", linewidth = 1)
+      p <- p + ggplot2::geom_density(fill = accent_fill, color = accent_col,
+                                     alpha = 0.5, linewidth = 0.8)
+      p <- p + ggplot2::geom_vline(xintercept = stats::median(v), color = ref_col,
+                                   linetype = "dashed", linewidth = 0.8)
+      # Show credible interval as vertical segments
+      p <- p + ggplot2::geom_vline(xintercept = c(ci_lo, ci_hi), color = "grey50",
+                                   linetype = "dotted", linewidth = 0.5)
 
       p <- p + .get_theme(theme_style)
       p <- p + ggplot2::labs(
         x = nm,
         y = "Density",
-        title = if (is.null(main)) sprintf("Posterior Density: %s (tau = %.3f)", nm, tau[1]) else main
-      )
-
-      p <- p + ggplot2::theme(
-        plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
-        axis.title = ggplot2::element_text(size = 12),
-        axis.text = ggplot2::element_text(size = 10),
-        panel.grid.minor = ggplot2::element_blank()
+        title = if (!is.null(main)) main else "Posterior Density",
+        subtitle = if (is.null(main)) sprintf("%s  |  tau = %.3f", nm, tau[1]) else NULL
       )
       return(p)
 
