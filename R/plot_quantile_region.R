@@ -251,7 +251,7 @@ plotQuantileRegion <- function(model,
       axis.title       = ggplot2::element_text(size = 12, face = "bold",
                                                 color = "grey20"),
       axis.text        = ggplot2::element_text(size = 10, color = "grey40"),
-      panel.background = ggplot2::element_rect(fill = "grey96", color = NA),
+      panel.background = ggplot2::element_rect(fill = "white", color = NA),
       panel.grid.major = ggplot2::element_line(color = "grey88", linewidth = 0.3),
       panel.grid.minor = ggplot2::element_blank(),
       plot.margin      = ggplot2::margin(14, 14, 10, 10)

@@ -9,8 +9,9 @@
 #' Supported plot types:
 #' \itemize{
 #'   \item \code{type = "fit"}: Fitted quantile curves versus a single
-#'         numeric predictor. Optionally overlay observed points and credible
-#'         bands. Other covariates can be held fixed via \code{at}.
+#'         numeric predictor (selected via \code{which}). Optionally overlay
+#'         observed points and credible bands. Other covariates can be held
+#'         fixed via \code{at}.
 #'   \item \code{type = "quantile"}: A single coefficient as a function
 #'         of the quantile \eqn{\tau}. Optionally add a reference line at 0 and
 #'         the corresponding OLS estimate.
@@ -24,12 +25,13 @@
 #' \itemize{
 #'   \item \code{tau} must be included in \code{x$quantile}. If \code{NULL}, all
 #'         available quantiles in the object are used.
-#'   \item For \code{type = "fit"}, \code{predictor} must be a numeric column in
+#'   \item For \code{type = "fit"}, \code{which} must name a numeric column in
 #'         the original model. If \code{NULL}, the first numeric predictor
 #'         (different from the response) is chosen automatically.
 #'   \item For \code{type = "fit"}, \code{at} is a named list
 #'         (\code{list(var = value, ...)}) used to fix other covariates while
-#'         plotting versus \code{predictor}. Provide valid levels for factors.
+#'         plotting versus the selected predictor. Provide valid levels for
+#'         factors.
 #'   \item When \code{use_ggplot = TRUE}, a ggplot object is returned and the
 #'         appearance is controlled by \code{theme_style} and
 #'         \code{color_palette}. Otherwise, base graphics are used and the
@@ -40,19 +42,23 @@
 #' @param y Ignored (S3 signature).
 #' @param type One of \code{"fit"}, \code{"quantile"}, \code{"trace"},
 #'   \code{"density"}.
-#' @param predictor (fit) Name of a numeric predictor; if \code{NULL}, the first
-#'   numeric predictor (excluding the response) is used.
 #' @param tau Quantile(s) to plot; must appear in \code{x$quantile}. If
 #'   \code{NULL}, all available are used.
-#' @param which (quantile/trace/density) Coefficient name or index to display.
-#' The default is the first coefficient associated with the first variable in the model.
+#' @param which Variable name(s) or coefficient index(es) to display.
+#'   For \code{type = "fit"}, the name of a numeric predictor to plot on the
+#'   x-axis (if \code{NULL}, the first numeric predictor is used).
+#'   For \code{type = "quantile"}, a character vector of coefficient names
+#'   or integer vector of indices; when more than one is given the plot uses
+#'   \code{facet_wrap} to show all coefficients in a single figure.
+#'   For \code{type = "trace"} and \code{type = "density"}, a single
+#'   coefficient name or index (default: first coefficient in the model).
 #' @param add_points (fit) Logical; overlay observed data points.
 #' @param combine (fit) Logical; if multiple \code{tau}: \code{TRUE} overlays
 #'   curves in one panel; \code{FALSE} uses one panel per quantile.
 #' @param show_ci (fit) Logical; draw credible bands.
 #' @param ci_probs (fit) Length-2 numeric vector with lower/upper probabilities
 #'   for credible bands.
-#' @param at (fit) Named list of fixed values for non-\code{predictor}
+#' @param at (fit) Named list of fixed values for non-plotted
 #'   covariates (see Details).
 #' @param grid_length (fit) Integer; number of points in the predictor grid.
 #' @param points_alpha (fit) Point transparency in \code{[0,1]}.
@@ -84,8 +90,10 @@
 #'                quantile = c(0.5, 0.75), method = "ald",
 #'                niter = 20000, burnin = 10000, thin = 5)
 #'
-#' plot(fit, type = "fit", predictor = "wt", show_ci = TRUE)
+#' plot(fit, type = "fit", which = "wt", show_ci = TRUE)
 #' plot(fit, type = "quantile", which = "wt", add_h0 = TRUE, add_ols = TRUE)
+#' plot(fit, type = "quantile", which = c("(Intercept)", "wt", "hp", "cyl"),
+#'      add_h0 = TRUE, add_ols = TRUE)
 #' plot(fit, type = "trace", which = "wt", tau = 0.5)
 #' plot(fit, type = "density", which = "wt", tau = 0.5)
 #' }
@@ -98,7 +106,6 @@
 plot.bqr.svy <- function(
     x, y = NULL,
     type = c("fit", "quantile", "trace", "density"),
-    predictor = NULL,
     tau = NULL,
     which = NULL,
     add_points = TRUE,
@@ -108,7 +115,7 @@ plot.bqr.svy <- function(
     at = NULL,
     grid_length = 200,
     points_alpha = 0.4,
-    point_size = 1.5,
+    point_size = 2.5,
     line_size = 1.2,
     main = NULL,
     use_ggplot = TRUE,
@@ -239,12 +246,13 @@ plot.bqr.svy <- function(
   }
 
   if (type == "fit") {
+    predictor <- which
     if (is.null(predictor)) {
       cand <- setdiff(names(mf), resp)
-      predictor <- cand[which(vapply(mf[cand], is.numeric, logical(1)))[1]]
+      predictor <- cand[vapply(mf[cand], is.numeric, logical(1))][1]
     }
     if (is.null(predictor) || !(predictor %in% names(mf)))
-      stop("Could not determine 'predictor'. Pass it (predictor='...').", call. = FALSE)
+      stop("Could not determine predictor. Pass it via 'which'.", call. = FALSE)
 
     newdata <- .make_newdata(predictor, at, grid_length)
     Xg <- stats::model.matrix(tt, newdata)
@@ -339,44 +347,74 @@ plot.bqr.svy <- function(
     if (length(tau) < 2L) {
       stop("For 'type=\"quantile\"' you must have at least two quantiles in the object or pass 'tau' with length > 1.", call. = FALSE)
     }
-    # Coefficient selection
+    # Coefficient selection — allow multiple coefficients
     D_example <- .get_draws(x, tau_sel = tau[1])
     if (is.null(which)) which <- colnames(D_example)[1]
-    idx <- if (is.character(which)) match(which[1], colnames(D_example)) else which[1]
-    if (is.na(idx) || idx < 1 || idx > ncol(D_example)) stop("'which' out of range.", call. = FALSE)
-    coef_name <- colnames(D_example)[idx]
 
-    # Summary by quantile
-    qsum <- lapply(tau, function(ti) {
-      Dk <- .get_draws(x, tau_sel = ti)[, idx]
-      data.frame(
-        tau = ti,
-        med = stats::median(Dk),
-        lo  = unname(stats::quantile(Dk, probs = ci_probs[1])),
-        hi  = unname(stats::quantile(Dk, probs = ci_probs[2]))
-      )
-    })
-    qsum <- do.call(rbind, qsum)
+    # Resolve indices for all requested coefficients
+    which_names <- character(length(which))
+    which_idx   <- integer(length(which))
+    for (w in seq_along(which)) {
+      idx_w <- if (is.character(which[w])) match(which[w], colnames(D_example)) else which[w]
+      if (is.na(idx_w) || idx_w < 1 || idx_w > ncol(D_example))
+        stop(sprintf("'which' value '%s' out of range.", which[w]), call. = FALSE)
+      which_names[w] <- colnames(D_example)[idx_w]
+      which_idx[w]   <- idx_w
+    }
 
-    # Optional OLS
-    ols_coef <- NA_real_
+    # Optional OLS (compute once)
+    ols_fit_obj <- NULL
     if (isTRUE(add_ols)) {
       if (is.null(ols_fit)) {
         fm <- stats::formula(tt)
-        if (is.null(ols_weights)) ols_fit <- stats::lm(fm, data = mf)
-        else                      ols_fit <- stats::lm(fm, data = mf, weights = ols_weights)
+        if (is.null(ols_weights)) ols_fit_obj <- stats::lm(fm, data = mf)
+        else                      ols_fit_obj <- stats::lm(fm, data = mf, weights = ols_weights)
+      } else {
+        ols_fit_obj <- ols_fit
       }
-      cn <- names(stats::coef(ols_fit))
-      j  <- if (is.character(which)) match(coef_name, cn) else idx
-      if (!is.na(j) && j >= 1 && j <= length(cn)) ols_coef <- stats::coef(ols_fit)[j]
     }
+
+    # Summary by quantile for each coefficient
+    qsum_list <- lapply(seq_along(which_idx), function(w) {
+      idx <- which_idx[w]
+      coef_name <- which_names[w]
+      do.call(rbind, lapply(tau, function(ti) {
+        Dk <- .get_draws(x, tau_sel = ti)[, idx]
+        data.frame(
+          tau = ti,
+          med = stats::median(Dk),
+          lo  = unname(stats::quantile(Dk, probs = ci_probs[1])),
+          hi  = unname(stats::quantile(Dk, probs = ci_probs[2])),
+          coef = coef_name,
+          stringsAsFactors = FALSE
+        )
+      }))
+    })
+    qsum <- do.call(rbind, qsum_list)
+    qsum$coef <- factor(qsum$coef, levels = which_names)
+
+    # OLS reference values per coefficient
+    ols_df <- NULL
+    if (isTRUE(add_ols) && !is.null(ols_fit_obj)) {
+      cn <- names(stats::coef(ols_fit_obj))
+      ols_vals <- vapply(which_names, function(nm) {
+        j <- match(nm, cn)
+        if (!is.na(j)) stats::coef(ols_fit_obj)[j] else NA_real_
+      }, numeric(1))
+      ols_df <- data.frame(coef = factor(which_names, levels = which_names),
+                           ols = ols_vals, stringsAsFactors = FALSE)
+      ols_df <- ols_df[is.finite(ols_df$ols), , drop = FALSE]
+    }
+
+    # Single coefficient case (backwards compatible)
+    multi_coef <- length(which_idx) > 1L
 
     # ggplot2 plot
     if (use_ggplot && requireNamespace("ggplot2", quietly = TRUE)) {
-      p <- ggplot2::ggplot(qsum, ggplot2::aes(x = tau, y = med))
+      p <- ggplot2::ggplot(qsum, ggplot2::aes(x = .data$tau, y = .data$med))
 
       # Always show the credible band for quantile plots
-      p <- p + ggplot2::geom_ribbon(ggplot2::aes(ymin = lo, ymax = hi),
+      p <- p + ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lo, ymax = .data$hi),
                                     fill = accent_fill, alpha = 0.3,
                                     inherit.aes = TRUE)
 
@@ -384,26 +422,40 @@ plot.bqr.svy <- function(
         p <- p + ggplot2::geom_hline(yintercept = 0, linetype = "dashed",
                                      color = "grey50", linewidth = 0.5)
       }
-      if (isTRUE(add_ols) && is.finite(ols_coef)) {
-        p <- p + ggplot2::geom_hline(yintercept = ols_coef, linetype = "dotted",
+      if (isTRUE(add_ols) && !is.null(ols_df) && nrow(ols_df) > 0L) {
+        p <- p + ggplot2::geom_hline(data = ols_df,
+                                     ggplot2::aes(yintercept = .data$ols),
+                                     linetype = "dotted",
                                      color = ref_col, linewidth = 0.8)
       }
 
       p <- p + ggplot2::geom_line(color = accent_col, linewidth = line_size)
       p <- p + ggplot2::geom_point(color = accent_col, size = 2.5, shape = 19)
 
+      if (multi_coef) {
+        p <- p + ggplot2::facet_wrap(~ .data$coef, scales = "free_y")
+      }
+
       p <- p + .get_theme(theme_style) +
         ggplot2::labs(
           x = expression(tau),
-          y = coef_name,
-          title = if (!is.null(main)) main else "Coefficient Across Quantiles",
-          subtitle = if (is.null(main)) coef_name else NULL
+          y = if (!multi_coef) which_names[1] else NULL,
+          title = if (!is.null(main)) main else "Coefficient Across Quantiles"
         ) +
         ggplot2::theme(legend.position = "none")
+
+      if (multi_coef) {
+        p <- p + ggplot2::theme(
+          strip.text = ggplot2::element_text(size = 11, face = "bold")
+        )
+      }
       return(p)
 
     } else {
-      # Base R
+      # Base R (single coefficient only)
+      idx <- which_idx[1]
+      coef_name <- which_names[1]
+      ols_coef <- if (!is.null(ols_df) && nrow(ols_df) > 0L) ols_df$ols[1] else NA_real_
       ylim <- range(qsum$lo, qsum$hi, qsum$med, if (add_h0) 0 else NA_real_, na.rm = TRUE)
       graphics::plot(qsum$tau, qsum$med, type = "n",
                      xlab = "Quantile", ylab = coef_name,
@@ -448,7 +500,7 @@ plot.bqr.svy <- function(
         x = "Iteration",
         y = nm,
         title = if (!is.null(main)) main else "MCMC Trace",
-        subtitle = if (is.null(main)) sprintf("%s  |  tau = %.3f", nm, tau[1]) else NULL
+        subtitle = if (is.null(main)) sprintf("tau = %.3f", tau[1]) else NULL
       )
       return(p)
 
@@ -485,7 +537,7 @@ plot.bqr.svy <- function(
         x = nm,
         y = "Density",
         title = if (!is.null(main)) main else "Posterior Density",
-        subtitle = if (is.null(main)) sprintf("%s  |  tau = %.3f", nm, tau[1]) else NULL
+        subtitle = if (is.null(main)) sprintf("tau = %.3f", tau[1]) else NULL
       )
       return(p)
 

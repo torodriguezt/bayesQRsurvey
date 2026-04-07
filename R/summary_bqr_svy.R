@@ -70,7 +70,7 @@ NULL
 #' @param ... Unused.
 #' @return An object of class \code{summary.bqr.svy} with one block per \eqn{\tau}.
 #' @exportS3Method summary bqr.svy
-summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 2, ...) {
+summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
   stopifnot(inherits(object, "bqr.svy"))
 
   meta <- list(

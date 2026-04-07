@@ -7,7 +7,7 @@
 \alias{summary.mo.bqr.svy}
 \title{Summary methods for bayesQRsurvey}
 \usage{
-\method{summary}{bqr.svy}(object, probs = c(0.025, 0.975), digits = 2, ...)
+\method{summary}{bqr.svy}(object, probs = c(0.025, 0.975), digits = 3, ...)
 
 \method{summary}{mo.bqr.svy}(object, digits = 4, ...)
 }

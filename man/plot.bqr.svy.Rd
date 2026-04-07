@@ -11,7 +11,6 @@
   x,
   y = NULL,
   type = c("fit", "quantile", "trace", "density"),
-  predictor = NULL,
   tau = NULL,
   which = NULL,
   add_points = TRUE,
@@ -21,7 +20,7 @@
   at = NULL,
   grid_length = 200,
   points_alpha = 0.4,
-  point_size = 1.5,
+  point_size = 2.5,
   line_size = 1.2,
   main = NULL,
   use_ggplot = TRUE,
@@ -46,14 +45,17 @@
 \item{type}{One of \code{"fit"}, \code{"quantile"}, \code{"trace"},
 \code{"density"}.}
 
-\item{predictor}{(fit) Name of a numeric predictor; if \code{NULL}, the first
-numeric predictor (excluding the response) is used.}
-
 \item{tau}{Quantile(s) to plot; must appear in \code{x$quantile}. If
 \code{NULL}, all available are used.}
 
-\item{which}{(quantile/trace/density) Coefficient name or index to display.
-The default is the first coefficient associated with the first variable in the model.}
+\item{which}{Variable name(s) or coefficient index(es) to display.
+For \code{type = "fit"}, the name of a numeric predictor to plot on the
+x-axis (if \code{NULL}, the first numeric predictor is used).
+For \code{type = "quantile"}, a character vector of coefficient names
+or integer vector of indices; when more than one is given the plot uses
+\code{facet_wrap} to show all coefficients in a single figure.
+For \code{type = "trace"} and \code{type = "density"}, a single
+coefficient name or index (default: first coefficient in the model).}
 
 \item{add_points}{(fit) Logical; overlay observed data points.}
 
@@ -65,7 +67,7 @@ curves in one panel; \code{FALSE} uses one panel per quantile.}
 \item{ci_probs}{(fit) Length-2 numeric vector with lower/upper probabilities
 for credible bands.}
 
-\item{at}{(fit) Named list of fixed values for non-\code{predictor}
+\item{at}{(fit) Named list of fixed values for non-plotted
 covariates (see Details).}
 
 \item{grid_length}{(fit) Integer; number of points in the predictor grid.}
@@ -113,8 +115,9 @@ MCMC trace plots, and posterior densities.
 Supported plot types:
 \itemize{
 \item \code{type = "fit"}: Fitted quantile curves versus a single
-numeric predictor. Optionally overlay observed points and credible
-bands. Other covariates can be held fixed via \code{at}.
+numeric predictor (selected via \code{which}). Optionally overlay
+observed points and credible bands. Other covariates can be held
+fixed via \code{at}.
 \item \code{type = "quantile"}: A single coefficient as a function
 of the quantile \eqn{\tau}. Optionally add a reference line at 0 and
 the corresponding OLS estimate.
@@ -128,12 +131,13 @@ Notes:
 \itemize{
 \item \code{tau} must be included in \code{x$quantile}. If \code{NULL}, all
 available quantiles in the object are used.
-\item For \code{type = "fit"}, \code{predictor} must be a numeric column in
+\item For \code{type = "fit"}, \code{which} must name a numeric column in
 the original model. If \code{NULL}, the first numeric predictor
 (different from the response) is chosen automatically.
 \item For \code{type = "fit"}, \code{at} is a named list
 (\code{list(var = value, ...)}) used to fix other covariates while
-plotting versus \code{predictor}. Provide valid levels for factors.
+plotting versus the selected predictor. Provide valid levels for
+factors.
 \item When \code{use_ggplot = TRUE}, a ggplot object is returned and the
 appearance is controlled by \code{theme_style} and
 \code{color_palette}. Otherwise, base graphics are used and the
@@ -147,8 +151,10 @@ fit <- bqr.svy(mpg ~ wt + hp + cyl, data = mtcars,
                quantile = c(0.5, 0.75), method = "ald",
                niter = 20000, burnin = 10000, thin = 5)
 
-plot(fit, type = "fit", predictor = "wt", show_ci = TRUE)
+plot(fit, type = "fit", which = "wt", show_ci = TRUE)
 plot(fit, type = "quantile", which = "wt", add_h0 = TRUE, add_ols = TRUE)
+plot(fit, type = "quantile", which = c("(Intercept)", "wt", "hp", "cyl"),
+     add_h0 = TRUE, add_ols = TRUE)
 plot(fit, type = "trace", which = "wt", tau = 0.5)
 plot(fit, type = "density", which = "wt", tau = 0.5)
 }
