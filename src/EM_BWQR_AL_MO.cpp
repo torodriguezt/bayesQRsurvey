@@ -55,8 +55,8 @@ Rcpp::List _bwqr_weighted_em_cpp_sep(
 
   bool prior_by_block = (mu0.size() == m_blk) && (sigma0.rows() == m_blk && sigma0.cols() == m_blk);
 
-  MatrixXd YU = y * U;              // n x K
-  MatrixXd YG; if (r > 0) YG = y * Gamma;  // n x (K*r)
+  MatrixXd YU = y * U;
+  MatrixXd YG; if (r > 0) YG = y * Gamma;
 
   const double delta2 = 2.0 / (tau * (1.0 - tau));
   const double theta  = (1.0 - 2.0 * tau) / (tau * (1.0 - tau));
@@ -71,7 +71,7 @@ Rcpp::List _bwqr_weighted_em_cpp_sep(
     sigma_fixed_val = fs[0];
   }
 
-  MatrixXd beta_prev = MatrixXd::Zero(K, m_blk);  // K x (p+r)
+  MatrixXd beta_prev = MatrixXd::Zero(K, m_blk);
   VectorXd sigma_prev = VectorXd::Constant(K, 1.0);
 
   for (int k = 0; k < K; ++k) {
@@ -81,7 +81,6 @@ Rcpp::List _bwqr_weighted_em_cpp_sep(
       Xstar.rightCols(r) = YG.block(0, k * r, n, r);
     }
     VectorXd yk = YU.col(k);
-    // OLS
     VectorXd bk = (Xstar.transpose() * Xstar).ldlt().solve(Xstar.transpose() * yk);
     beta_prev.row(k) = bk.transpose();
     if (use_fixed_sigma) {
@@ -93,7 +92,6 @@ Rcpp::List _bwqr_weighted_em_cpp_sep(
     }
   }
 
-  // ===== EM =====
   MatrixXd beta_curr = beta_prev;
   VectorXd sigma_curr = sigma_prev;
 
@@ -182,8 +180,8 @@ Rcpp::List _bwqr_weighted_em_cpp_sep(
 
     if (diff < eps) {
       return List::create(
-        _["beta"]      = beta_curr,   // K x (p+r)
-        _["sigma"]     = sigma_curr,  // K
+        _["beta"]      = beta_curr,
+        _["sigma"]     = sigma_curr,
         _["iter"]      = iter + 1,
         _["converged"] = true
       );
