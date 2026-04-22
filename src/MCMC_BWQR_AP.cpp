@@ -4,15 +4,14 @@
 #include <RcppArmadillo.h>
 #include <cmath>
 #include <algorithm>
-#include <R_ext/Utils.h>   // R_CheckUserInterrupt
-#include <R_ext/Print.h>   // Rprintf, R_FlushConsole
+#include <R_ext/Utils.h>
+#include <R_ext/Print.h>
 
 using namespace Rcpp;
 using namespace arma;
 
 constexpr double PI = 3.14159265358979323846;
 
-// Generador: m + L z, con L lower-triangular (p x p)
 inline arma::vec rmvnorm(const arma::vec& m, const arma::mat& L) {
   return m + L * randn<vec>(m.n_elem);
 }
@@ -34,7 +33,6 @@ static double log_post(const arma::vec& beta,
   const int p = beta.n_elem;
   const double lambda = arma::accu(w);
 
-  // Prior normal
   arma::vec diff = beta - b0;
   double lp = -0.5 * dot(diff, B_inv * diff);
 
@@ -49,12 +47,11 @@ static double log_post(const arma::vec& beta,
     arma::mat Xw = X.each_col() % arma::sqrt(w);
     wcA = tau * (1.0 - tau) * (Xw.t() * Xw);
   }
-  wcA.diag() += ridge; // SPD
+  wcA.diag() += ridge;
 
   bool ok = arma::inv_sympd(wc, wcA);
   if (!ok) wc = arma::pinv(wcA, 1e-12);
 
-  // log |Var|
   double ld = arma::log_det_sympd(wcA);
 
   double quad = dot(s_tau, wc * s_tau);
@@ -88,7 +85,6 @@ Rcpp::List _mcmc_bwqr_ap_cpp(const arma::vec& y,
   const int n = y.n_elem;
   const double ridge = 1e-8;
 
-  // Prior
   arma::vec b0 = b_prior_mean.isNotNull() ? Rcpp::as<arma::vec>(b_prior_mean) : arma::zeros<vec>(p);
   if (b0.n_elem != p)
     stop("b_prior_mean must have length equal to ncol(X)");
@@ -118,7 +114,6 @@ Rcpp::List _mcmc_bwqr_ap_cpp(const arma::vec& y,
   Sigma_prop.diag() += 1e-12;
   arma::mat L_prop = chol(Sigma_prop, "lower");
 
-  // Buffers
   arma::mat S(n, p, fill::zeros);
   arma::mat wcA(p, p), wc(p, p);
 
