@@ -102,17 +102,31 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
 
     stats <- summarise_draws_custom(D, probs = probs)
 
-    coef_idx   <- stats$variable != "sigma"
-    coef_stats <- stats[coef_idx, , drop = FALSE]
+    # Include sigma in main table only when it was estimated
+    if (isTRUE(object$estimate_sigma)) {
+      coef_rows <- stats
+    } else {
+      coef_rows <- stats[stats$variable != "sigma", , drop = FALSE]
+    }
 
-    vars <- coef_stats$variable
+    # Main table: estimate + credible interval (3 numeric columns)
+    main_cols    <- c("variable", "mean", "lower_ci", "upper_ci")
+    coef_summary <- coef_rows[, intersect(main_cols, names(coef_rows)), drop = FALSE]
+
+    # Re-compute CI directly from draws for accuracy
+    vars <- coef_summary$variable
     ic   <- ic_by_name(D, vars, probs)
-    coef_stats$lower_ci <- ic$lower
-    coef_stats$upper_ci <- ic$upper
+    coef_summary$lower_ci <- ic$lower
+    coef_summary$upper_ci <- ic$upper
+
+    # Diagnosis: convergence diagnostics only
+    diag_keep <- c("variable", "rhat", "ess_bulk", "ess_tail")
+    diagnosis  <- stats[, intersect(diag_keep, names(stats)), drop = FALSE]
 
     list(
       tau          = tau,
-      coef_summary = coef_stats,
+      coef_summary = coef_summary,
+      diagnosis    = diagnosis,
       full_summary = stats,
       n_draws      = nrow(D),
       meta         = meta,
@@ -129,11 +143,15 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
     names(per_tau) <- paste0("tau=", formatC(object$quantile, format = "f", digits = 3))
   }
 
+  diag_out <- lapply(per_tau, `[[`, "diagnosis")
+  if (length(diag_out) == 1L) diag_out <- diag_out[[1]]
+
   res <- list(
     call      = object$call %||% NULL,
     method    = object$method %||% object$algorithm %||% NA_character_,
     quantiles = object$quantile,
-    per_tau   = per_tau
+    per_tau   = per_tau,
+    diagnosis = diag_out
   )
   class(res) <- "summary.bqr.svy"
   res
@@ -231,7 +249,7 @@ print.summary.bqr.svy <- function(x, ...) {
         " | Thin: ", blk$meta$thin, "\n\n", sep = "")
 
     cs <- blk$coef_summary
-    show_cols <- c("variable","mean","sd","rhat","ess_bulk","ess_tail","lower_ci","upper_ci")
+    show_cols <- c("variable", "mean", "lower_ci", "upper_ci")
     show_cols <- intersect(show_cols, colnames(cs))
     if (!length(show_cols)) {
       print(cs)
@@ -245,6 +263,7 @@ print.summary.bqr.svy <- function(x, ...) {
     }
     cat("\n")
   }
+  cat("  Use $diagnosis for R-hat, Bulk-ESS, and Tail-ESS.\n\n")
   invisible(x)
 }
 
@@ -467,53 +486,32 @@ print.bqr.svy <- function(x, digits = 3, ...) {
   cat("Formula  :", deparse(x$formula), "\n")
   if (!is.null(x$runtime)) cat("Runtime  :", round(x$runtime, 3), "sec\n")
 
-  cat("\nCoefficients (posterior means):\n")
-  print(round(x$beta, digits))
-
-  # ---- Scale (sigma) only for ALD ----
-  if (identical(x$method, "ald")) {
-    cat("\nScale (sigma):\n")
-
-    # 1) Determinar si se estimó sigma (flag del objeto)
-    est_flag <- isTRUE(x$estimate_sigma)
-
-    # 2) Etiquetas de tau
-    tau_labs <- paste0("tau=", formatC(x$quantile, digits = 3, format = "f"))
-
-    # 3) Extraer un punto (media posterior) de sigma por cuantil si hay draws
-    make_point <- function(m) {
-      if (is.matrix(m) && "sigma" %in% colnames(m)) {
-        mean(m[, "sigma"], na.rm = TRUE)
-      } else {
-        NA_real_
-      }
+  # Build coefficient display, appending sigma row when estimated
+  beta_display <- x$beta
+  if (identical(x$method, "ald") && isTRUE(x$estimate_sigma)) {
+    sigma_mean <- function(m) {
+      if (is.matrix(m) && "sigma" %in% colnames(m)) mean(m[, "sigma"], na.rm = TRUE)
+      else NA_real_
     }
-
-    # Construir vector de sigmas por tau (o NA si no disponible)
-    sig_vec <- rep(NA_real_, length(x$quantile))
-    if (is.matrix(x$draws) && length(x$quantile) == 1) {
-      sig_vec[1] <- make_point(x$draws)
-    } else if (is.list(x$draws) && length(x$draws) == length(x$quantile)) {
-      sig_vec <- vapply(x$draws, make_point, numeric(1))
-    }
-
-    # 4) Imprimir según fijo/estimado
-    if (isFALSE(est_flag)) {
-      cat("  (sigma fixed at 1 by default)\n")
-      for (i in seq_along(tau_labs)) {
-        cat(" ", tau_labs[i], ": 1.000 (fixed)\n", sep = "")
-      }
+    sig_vec <- if (is.matrix(x$draws) && length(x$quantile) == 1L) {
+      sigma_mean(x$draws)
+    } else if (is.list(x$draws)) {
+      vapply(x$draws, sigma_mean, numeric(1))
     } else {
-      for (i in seq_along(tau_labs)) {
-        val <- sig_vec[i]
-        if (is.na(val)) {
-          cat(" ", tau_labs[i], ": not available\n", sep = "")
-        } else {
-          cat(" ", tau_labs[i], ": ", formatC(val, format = "f", digits = digits), "\n", sep = "")
-        }
-      }
+      NA_real_
     }
+    if (is.matrix(beta_display)) {
+      sigma_row         <- matrix(sig_vec, nrow = 1, dimnames = list("sigma", colnames(beta_display)))
+      beta_display      <- rbind(beta_display, sigma_row)
+    } else {
+      beta_display <- c(beta_display, sigma = sig_vec)
+    }
+  } else if (identical(x$method, "ald") && !isTRUE(x$estimate_sigma)) {
+    cat("  (sigma fixed at 1)\n")
   }
+
+  cat("\nCoefficients (posterior means):\n")
+  print(round(beta_display, digits))
 
   # ---- Acceptance rate ----
   if (!is.null(x$accept_rate)) {
