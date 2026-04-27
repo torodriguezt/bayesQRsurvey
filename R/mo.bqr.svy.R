@@ -90,6 +90,9 @@ if (!exists("%||%"))
 #' @param verbose logical flag indicating whether to print progress messages (default=FALSE).
 #' @param estimate_sigma logical flag indicating whether to estimate the scale parameter
 #' when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)
+#' @param seed optional integer seed passed to \code{\link{set.seed}} before random
+#' directions are generated (only relevant when \code{n_dir} is used and \code{d > 1}).
+#' Has no effect when \code{U} is supplied explicitly.
 #'
 #' @return An object of class \code{"mo.bqr.svy"} containing:
 #'   \item{call}{The matched call}
@@ -179,7 +182,8 @@ mo.bqr.svy <- function(formula,
                        epsilon  = 1e-6,
                        max_iter = 1000,
                        verbose  = FALSE,
-                       estimate_sigma = FALSE) {
+                       estimate_sigma = FALSE,
+                       seed     = NULL) {
 
   algorithm <- "em"
   if (missing(data)) stop("'data' must be provided.")
@@ -297,6 +301,7 @@ mo.bqr.svy <- function(formula,
       K <- max(1L, as.integer(n_dir))
       U <- matrix(NA_real_, d, K)
       Gamma_list <- vector("list", K)
+      if (!is.null(seed)) set.seed(seed)
       for (k in seq_len(K)) {
         u_k <- rnorm(d); u_k <- u_k / sqrt(sum(u_k^2))
         U[, k] <- u_k
