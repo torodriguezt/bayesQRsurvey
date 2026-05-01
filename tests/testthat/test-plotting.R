@@ -7,7 +7,7 @@ test_that("plot.bqr.svy returns a ggplot object", {
                      y = 1 + 0.5 * seq(-2, 2, length.out = 20) + rnorm(20, 0, 0.3))
 
   fit <- bqr.svy(y ~ x, data = data, quantile = 0.5, niter = 500)
-  result <- plot(fit, which = "x1", tau = 0.5)
+  result <- plot(fit, type = "fit", which = "x", tau = 0.5)
 
   expect_s3_class(result, "ggplot")
   expect_true(is.data.frame(result$data))

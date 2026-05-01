@@ -58,6 +58,7 @@ Rcpp::List _mcmc_bwqr_sl_cpp(const arma::vec& y,
                              Rcpp::Nullable<Rcpp::NumericMatrix> B_prior_prec,
                              int print_progress = 1000);
 
+// [[Rcpp::export(name = ".bwqr_weighted_em_cpp_sep")]]
 Rcpp::List bwqr_weighted_em_cpp_sep_wrap(
     const Eigen::MatrixXd& y,
     const Eigen::MatrixXd& x,
@@ -82,6 +83,7 @@ Rcpp::List bwqr_weighted_em_cpp_sep_wrap(
   );
 }
 
+// [[Rcpp::export(name = ".MCMC_BWQR_AL")]]
 Rcpp::List MCMC_BWQR_AL_wrap(const arma::vec& y,
                              const arma::mat& X,
                              const arma::vec& w,

@@ -337,12 +337,7 @@ bqr.svy <- function(formula,
     beta_hat_i <- if (ncol(draws_i) >= p) colMeans(draws_i[, seq_len(p), drop = FALSE]) else numeric(0)
     names(beta_hat_i) <- if (length(beta_hat_i) > 0) coef_names else character(0)
 
-    diagnosis_i <- tryCatch(
-      posterior::summarize_draws(draws_i, "rhat", "ess_bulk", "ess_tail"),
-      error = function(e) NULL
-    )
-
-    list(draws = draws_i, beta = beta_hat_i, accept_rate = accept_rate_i, diagnosis = diagnosis_i)
+    list(draws = draws_i, beta = beta_hat_i, accept_rate = accept_rate_i)
   }
 
   # --- Ejecutar para todos los taus ---
@@ -357,7 +352,6 @@ bqr.svy <- function(formula,
       beta           = fits[[1]]$beta,
       draws          = fits[[1]]$draws,
       accept_rate    = fits[[1]]$accept_rate,
-      diagnosis      = fits[[1]]$diagnosis,
       warmup         = burnin,
       thin           = thin,
       runtime        = runtime,
@@ -378,13 +372,11 @@ bqr.svy <- function(formula,
     draws_list <- lapply(fits, `[[`, "draws")
     acc_vec    <- vapply(fits, `[[`, numeric(1), "accept_rate")
     names(acc_vec) <- names(fits)
-    diag_list  <- setNames(lapply(fits, `[[`, "diagnosis"), names(fits))
 
     out <- list(
       beta           = beta_mat,
       draws          = draws_list,
       accept_rate    = acc_vec,
-      diagnosis      = diag_list,
       warmup         = burnin,
       thin           = thin,
       runtime        = runtime,

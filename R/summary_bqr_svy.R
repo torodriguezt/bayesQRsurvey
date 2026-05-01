@@ -115,19 +115,6 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
 
     # Re-compute CI directly from draws for accuracy
     vars <- coef_summary$variable
-    # Include sigma in main table only when it was estimated
-    if (isTRUE(object$estimate_sigma)) {
-      coef_rows <- stats
-    } else {
-      coef_rows <- stats[stats$variable != "sigma", , drop = FALSE]
-    }
-
-    # Main table: estimate + credible interval (3 numeric columns)
-    main_cols    <- c("variable", "mean", "lower_ci", "upper_ci")
-    coef_summary <- coef_rows[, intersect(main_cols, names(coef_rows)), drop = FALSE]
-
-    # Re-compute CI directly from draws for accuracy
-    vars <- coef_summary$variable
     ic   <- ic_by_name(D, vars, probs)
     coef_summary$lower_ci <- ic$lower
     coef_summary$upper_ci <- ic$upper
@@ -151,15 +138,11 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
     names(per_tau) <- paste0("tau=", formatC(object$quantile, format = "f", digits = 3))
   }
 
-  diag_out <- lapply(per_tau, `[[`, "diagnosis")
-  if (length(diag_out) == 1L) diag_out <- diag_out[[1]]
-
   res <- list(
     call      = object$call %||% NULL,
     method    = object$method %||% object$algorithm %||% NA_character_,
     quantiles = object$quantile,
-    per_tau   = per_tau,
-    diagnosis = diag_out
+    per_tau   = per_tau
   )
   class(res) <- "summary.bqr.svy"
   res
@@ -258,7 +241,6 @@ print.summary.bqr.svy <- function(x, ...) {
 
     cs <- blk$coef_summary
     show_cols <- c("variable", "mean", "lower_ci", "upper_ci")
-    show_cols <- c("variable", "mean", "lower_ci", "upper_ci")
     show_cols <- intersect(show_cols, colnames(cs))
     if (!length(show_cols)) {
       print(cs)
@@ -272,7 +254,6 @@ print.summary.bqr.svy <- function(x, ...) {
     }
     cat("\n")
   }
-  cat("  Use $diagnosis for R-hat, Bulk-ESS, and Tail-ESS.\n\n")
   invisible(x)
 }
 
