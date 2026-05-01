@@ -493,23 +493,6 @@ print.bqr.svy <- function(x, digits = 3, ...) {
     if (is.matrix(beta_display)) {
       sigma_row         <- matrix(sig_vec, nrow = 1, dimnames = list("sigma", colnames(beta_display)))
       beta_display      <- rbind(beta_display, sigma_row)
-  # Build coefficient display, appending sigma row when estimated
-  beta_display <- x$beta
-  if (identical(x$method, "ald") && isTRUE(x$estimate_sigma)) {
-    sigma_mean <- function(m) {
-      if (is.matrix(m) && "sigma" %in% colnames(m)) mean(m[, "sigma"], na.rm = TRUE)
-      else NA_real_
-    }
-    sig_vec <- if (is.matrix(x$draws) && length(x$quantile) == 1L) {
-      sigma_mean(x$draws)
-    } else if (is.list(x$draws)) {
-      vapply(x$draws, sigma_mean, numeric(1))
-    } else {
-      NA_real_
-    }
-    if (is.matrix(beta_display)) {
-      sigma_row         <- matrix(sig_vec, nrow = 1, dimnames = list("sigma", colnames(beta_display)))
-      beta_display      <- rbind(beta_display, sigma_row)
     } else {
       beta_display <- c(beta_display, sigma = sig_vec)
     }
