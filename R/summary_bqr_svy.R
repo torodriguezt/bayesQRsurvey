@@ -115,18 +115,26 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
 
     # Re-compute CI directly from draws for accuracy
     vars <- coef_summary$variable
+    # Include sigma in main table only when it was estimated
+    if (isTRUE(object$estimate_sigma)) {
+      coef_rows <- stats
+    } else {
+      coef_rows <- stats[stats$variable != "sigma", , drop = FALSE]
+    }
+
+    # Main table: estimate + credible interval (3 numeric columns)
+    main_cols    <- c("variable", "mean", "lower_ci", "upper_ci")
+    coef_summary <- coef_rows[, intersect(main_cols, names(coef_rows)), drop = FALSE]
+
+    # Re-compute CI directly from draws for accuracy
+    vars <- coef_summary$variable
     ic   <- ic_by_name(D, vars, probs)
     coef_summary$lower_ci <- ic$lower
     coef_summary$upper_ci <- ic$upper
 
-    # Diagnosis: convergence diagnostics only
-    diag_keep <- c("variable", "rhat", "ess_bulk", "ess_tail")
-    diagnosis  <- stats[, intersect(diag_keep, names(stats)), drop = FALSE]
-
     list(
       tau          = tau,
       coef_summary = coef_summary,
-      diagnosis    = diagnosis,
       full_summary = stats,
       n_draws      = nrow(D),
       meta         = meta,
@@ -249,6 +257,7 @@ print.summary.bqr.svy <- function(x, ...) {
         " | Thin: ", blk$meta$thin, "\n\n", sep = "")
 
     cs <- blk$coef_summary
+    show_cols <- c("variable", "mean", "lower_ci", "upper_ci")
     show_cols <- c("variable", "mean", "lower_ci", "upper_ci")
     show_cols <- intersect(show_cols, colnames(cs))
     if (!length(show_cols)) {
@@ -486,6 +495,23 @@ print.bqr.svy <- function(x, digits = 3, ...) {
   cat("Formula  :", deparse(x$formula), "\n")
   if (!is.null(x$runtime)) cat("Runtime  :", round(x$runtime, 3), "sec\n")
 
+  # Build coefficient display, appending sigma row when estimated
+  beta_display <- x$beta
+  if (identical(x$method, "ald") && isTRUE(x$estimate_sigma)) {
+    sigma_mean <- function(m) {
+      if (is.matrix(m) && "sigma" %in% colnames(m)) mean(m[, "sigma"], na.rm = TRUE)
+      else NA_real_
+    }
+    sig_vec <- if (is.matrix(x$draws) && length(x$quantile) == 1L) {
+      sigma_mean(x$draws)
+    } else if (is.list(x$draws)) {
+      vapply(x$draws, sigma_mean, numeric(1))
+    } else {
+      NA_real_
+    }
+    if (is.matrix(beta_display)) {
+      sigma_row         <- matrix(sig_vec, nrow = 1, dimnames = list("sigma", colnames(beta_display)))
+      beta_display      <- rbind(beta_display, sigma_row)
   # Build coefficient display, appending sigma row when estimated
   beta_display <- x$beta
   if (identical(x$method, "ald") && isTRUE(x$estimate_sigma)) {
