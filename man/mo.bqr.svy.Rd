@@ -16,7 +16,8 @@ mo.bqr.svy(
   epsilon = 1e-06,
   max_iter = 1000,
   verbose = FALSE,
-  estimate_sigma = FALSE
+  estimate_sigma = FALSE,
+  seed = NULL
 )
 }
 \arguments{
@@ -46,6 +47,10 @@ and \eqn{K} indicates indicates the number of directions.}
 
 \item{estimate_sigma}{logical flag indicating whether to estimate the scale parameter
 when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)}
+
+\item{seed}{optional integer seed passed to \code{\link{set.seed}} before random
+directions are generated (only relevant when \code{n_dir} is used and \code{d > 1}).
+Has no effect when \code{U} is supplied explicitly.}
 }
 \value{
 An object of class \code{"mo.bqr.svy"} containing:
