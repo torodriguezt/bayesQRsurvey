@@ -81,48 +81,56 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
     runtime     = object$runtime  %||% NA_real_
   )
 
-  ic_by_name <- function(D, vars, probs) {
-    lower <- upper <- rep(NA_real_, length(vars))
-    cn <- colnames(D)
-    for (i in seq_along(vars)) {
-      j <- match(vars[i], cn)
-      if (!is.na(j)) {
-        vcol <- D[, j]
-        lower[i] <- stats::quantile(vcol, probs = probs[1], na.rm = TRUE)
-        upper[i] <- stats::quantile(vcol, probs = probs[2], na.rm = TRUE)
-      }
-    }
-    list(lower = lower, upper = upper)
+  get_diag <- function(tau_label) {
+    d <- object$diagnosis
+    if (is.null(d)) return(NULL)
+    if (is.data.frame(d)) return(d)
+    if (is.list(d) && !is.null(tau_label) && !is.null(d[[tau_label]])) return(d[[tau_label]])
+    NULL
   }
 
-  make_block <- function(D, tau) {
+  make_block <- function(D, tau, tau_label) {
     D <- if (is.data.frame(D)) data.matrix(D) else as.matrix(D)
     storage.mode(D) <- "numeric"
     if (!nrow(D) || !ncol(D)) stop("Empty draws matrix.", call. = FALSE)
 
-    stats <- summarise_draws_custom(D, probs = probs)
-
-    # Include sigma in main table only when it was estimated
-    if (isTRUE(object$estimate_sigma)) {
-      coef_rows <- stats
-    } else {
-      coef_rows <- stats[stats$variable != "sigma", , drop = FALSE]
+    cn <- colnames(D)
+    if (is.null(cn)) {
+      cn <- paste0("V", seq_len(ncol(D)))
+      colnames(D) <- cn
     }
 
-    # Main table: estimate + credible interval (3 numeric columns)
-    main_cols    <- c("variable", "mean", "lower_ci", "upper_ci")
-    coef_summary <- coef_rows[, intersect(main_cols, names(coef_rows)), drop = FALSE]
+    if (isTRUE(object$estimate_sigma)) {
+      keep_idx <- seq_len(ncol(D))
+    } else {
+      keep_idx <- which(cn != "sigma")
+    }
+    vars <- cn[keep_idx]
 
-    # Re-compute CI directly from draws for accuracy
-    vars <- coef_summary$variable
-    ic   <- ic_by_name(D, vars, probs)
-    coef_summary$lower_ci <- ic$lower
-    coef_summary$upper_ci <- ic$upper
+    means    <- colMeans(D[, keep_idx, drop = FALSE], na.rm = TRUE)
+    lower_ci <- apply(D[, keep_idx, drop = FALSE], 2,
+                      stats::quantile, probs = probs[1], na.rm = TRUE)
+    upper_ci <- apply(D[, keep_idx, drop = FALSE], 2,
+                      stats::quantile, probs = probs[2], na.rm = TRUE)
+
+    coef_summary <- data.frame(
+      variable = vars,
+      mean     = unname(means),
+      lower_ci = unname(lower_ci),
+      upper_ci = unname(upper_ci),
+      stringsAsFactors = FALSE,
+      check.names      = FALSE
+    )
+
+    diag_block <- get_diag(tau_label)
+    if (!is.null(diag_block)) {
+      diag_block <- diag_block[diag_block$variable %in% vars, , drop = FALSE]
+    }
 
     list(
       tau          = tau,
       coef_summary = coef_summary,
-      full_summary = stats,
+      diagnosis    = diag_block,
       n_draws      = nrow(D),
       meta         = meta,
       probs        = probs,
@@ -130,12 +138,13 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
     )
   }
 
+  tau_labels <- paste0("tau=", formatC(object$quantile, format = "f", digits = 3))
   if (is.list(object$draws)) {
-    per_tau <- Map(make_block, object$draws, object$quantile)
-    names(per_tau) <- paste0("tau=", formatC(object$quantile, format = "f", digits = 3))
+    per_tau <- Map(make_block, object$draws, object$quantile, tau_labels)
+    names(per_tau) <- tau_labels
   } else {
-    per_tau <- list(make_block(object$draws, object$quantile))
-    names(per_tau) <- paste0("tau=", formatC(object$quantile, format = "f", digits = 3))
+    per_tau <- list(make_block(object$draws, object$quantile, tau_labels[1]))
+    names(per_tau) <- tau_labels
   }
 
   res <- list(
@@ -349,7 +358,11 @@ print.summary.mo.bqr.svy <- function(x, max_dir = 8, ...) {
   if (inherits(s, "summary.bqr.svy")) {
     taus <- vapply(s$per_tau, `[[`, numeric(1), "tau")
     idx  <- which.min(abs(taus - target_tau))
-    df   <- s$per_tau[[idx]]$coef_summary
+    blk  <- s$per_tau[[idx]]
+    df   <- blk$coef_summary
+    if (!is.null(blk$diagnosis)) {
+      df <- merge(df, blk$diagnosis, by = "variable", all.x = TRUE, sort = FALSE)
+    }
   } else if (inherits(s, "summary.mo.bqr.svy")) {
     blocks <- s$blocks
     make_df <- function(b) {
