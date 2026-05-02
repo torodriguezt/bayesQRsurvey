@@ -478,7 +478,8 @@ print.bqr.svy <- function(x, digits = 3, ...) {
 
   # Build coefficient display, appending sigma row when estimated
   beta_display <- x$beta
-  if (identical(x$method, "ald") && isTRUE(x$estimate_sigma)) {
+  sigma_estimated <- identical(x$method, "ald") && isTRUE(x$estimate_sigma)
+  if (sigma_estimated) {
     sigma_mean <- function(m) {
       if (is.matrix(m) && "sigma" %in% colnames(m)) mean(m[, "sigma"], na.rm = TRUE)
       else NA_real_
@@ -491,17 +492,19 @@ print.bqr.svy <- function(x, digits = 3, ...) {
       NA_real_
     }
     if (is.matrix(beta_display)) {
-      sigma_row         <- matrix(sig_vec, nrow = 1, dimnames = list("sigma", colnames(beta_display)))
-      beta_display      <- rbind(beta_display, sigma_row)
+      sigma_row    <- matrix(sig_vec, nrow = 1, dimnames = list("sigma", colnames(beta_display)))
+      beta_display <- rbind(beta_display, sigma_row)
     } else {
       beta_display <- c(beta_display, sigma = sig_vec)
     }
-  } else if (identical(x$method, "ald") && !isTRUE(x$estimate_sigma)) {
-    cat("  (sigma fixed at 1)\n")
   }
 
   cat("\nCoefficients (posterior means):\n")
   print(round(beta_display, digits))
+
+  if (identical(x$method, "ald") && !sigma_estimated) {
+    cat("\n(sigma fixed at 1)\n")
+  }
 
   # ---- Acceptance rate ----
   if (!is.null(x$accept_rate)) {
