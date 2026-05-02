@@ -151,12 +151,10 @@ bqr.svy <- function(formula,
   method <- match.arg(method)
   cl <- match.call()
 
-  ## --- Aviso sobre estimate_sigma SOLO si el usuario lo pasó y el método no es 'ald'
   if (method != "ald" && !missing(estimate_sigma)) {
     warning("'estimate_sigma' only applies to the 'ald' method and will be ignored", call. = FALSE)
   }
 
-  # --- Quantiles ---
   if (!is.numeric(quantile) || any(!is.finite(quantile)))
     stop("'quantile' must be numeric and finite.", call. = FALSE)
   if (any(quantile <= 0 | quantile >= 1))
@@ -165,14 +163,12 @@ bqr.svy <- function(formula,
   if (length(taus) < length(quantile))
     warning("Duplicated quantiles were provided; using unique sorted values.")
 
-  # --- MCMC controls ---
   if (niter <= 0 || burnin < 0 || thin <= 0)
     stop("'niter' and 'thin' must be > 0, and 'burnin' >= 0.", call. = FALSE)
   if (!is.logical(verbose) || length(verbose) != 1)
     stop("'verbose' must be a logical value (TRUE or FALSE).", call. = FALSE)
   print_progress <- if (verbose) 1L else 0L  # habilita barra/porcentaje en C++
 
-  # --- Model frame ---
   if (is.null(data)) data <- environment(formula)
   mf <- model.frame(formula, data, na.action = NULL)
   if (anyNA(mf))
@@ -183,10 +179,6 @@ bqr.svy <- function(formula,
   coef_names <- colnames(X)
   mt <- attr(mf, "terms")
 
-  # --- Weights ---
-  # Evaluate the weights expression in the data context first, then the calling
-  # environment.  This lets users write  weights = w  when "w" is a column in
-  # `data` without having to pre-define it in the global environment.
   w_expr <- substitute(weights)
   w <- if (missing(weights) || is.null(w_expr) || identical(w_expr, quote(NULL))) {
     rep(1, length(y))
@@ -211,7 +203,6 @@ bqr.svy <- function(formula,
 
   p <- ncol(X)
 
-  # --- Prior (unified -> bqr_prior interno) ---
   pri <- if (is.null(prior)) {
     as_bqr_prior(prior(), p = p, names_x = coef_names)
   } else if (inherits(prior, "prior")) {
@@ -222,10 +213,8 @@ bqr.svy <- function(formula,
     stop("'prior' must be NULL, a 'prior' object (see prior()), or a 'bqr_prior' (legacy).", call. = FALSE)
   }
 
-  # --- Detectar si el usuario definió explícitamente la prior de sigma (NO confundir con defaults)
   user_defined_sigma_prior <- .user_defined_sigma(prior)
 
-  ## --- Avisos sobre prior de sigma SOLO cuando corresponde
   if (method %in% c("score", "approximate") && isTRUE(user_defined_sigma_prior)) {
     warning(
       sprintf("Method '%s' does not estimate sigma; 'sigma_shape' and 'sigma_rate' in prior will be ignored.", method),
@@ -237,10 +226,8 @@ bqr.svy <- function(formula,
             call. = FALSE)
   }
 
-  # --- Pesos normalizados según método ---
   w_norm <- w / mean(w)
 
-  # --- Chequeo de soporte 'fix_sigma' en backend ALD ---
   supports_fix_sigma <- FALSE
   if (method == "ald") {
     supports_fix_sigma <- tryCatch({
@@ -248,7 +235,6 @@ bqr.svy <- function(formula,
     }, error = function(e) FALSE)
   }
 
-  # --- Backend para un tau ---
   run_backend_one <- function(tau_i) {
     draws_i <- switch(method,
                       "ald" = {
@@ -305,7 +291,6 @@ bqr.svy <- function(formula,
                       )
     )
 
-    # --- Limpieza y coerción de draws ---
     if (is.list(draws_i) && !is.data.frame(draws_i)) {
       draws_i <- lapply(draws_i, function(x) if (is.numeric(x) || is.matrix(x)) x)
       draws_i <- draws_i[!vapply(draws_i, is.null, logical(1))]
@@ -319,14 +304,12 @@ bqr.svy <- function(formula,
     if (anyNA(draws_i))
       stop("Backend returned non-numeric values; cannot summarize.", call. = FALSE)
 
-    # Manejo robusto de columnas diagnósticas
     diag_cols <- c("accept_rate", "n_mcmc", "burnin", "thin", "n_samples")
     cn <- colnames(draws_i)
     keep_idx <- if (is.null(cn)) rep(TRUE, ncol(draws_i)) else !(cn %in% diag_cols)
     accept_rate_i <- if (!is.null(cn) && "accept_rate" %in% cn) mean(draws_i[, "accept_rate"]) else NA_real_
     draws_i <- draws_i[, keep_idx, drop = FALSE]
 
-    # Nombres de columnas y betas
     if (ncol(draws_i) >= p) {
       if (is.null(colnames(draws_i))) colnames(draws_i) <- paste0("V", seq_len(ncol(draws_i)))
       colnames(draws_i)[1:p] <- coef_names
@@ -340,17 +323,39 @@ bqr.svy <- function(formula,
     list(draws = draws_i, beta = beta_hat_i, accept_rate = accept_rate_i)
   }
 
-  # --- Ejecutar para todos los taus ---
   fits <- lapply(taus, run_backend_one)
   names(fits) <- paste0("tau=", formatC(taus, format = "f", digits = 3))
 
   runtime <- proc.time()[["elapsed"]] - tic
 
+  report_sigma <- identical(method, "ald") && isTRUE(estimate_sigma)
+  compute_diagnosis <- function(D) {
+    D <- as.matrix(D)
+    if (!report_sigma && "sigma" %in% colnames(D)) {
+      D <- D[, colnames(D) != "sigma", drop = FALSE]
+    }
+    s <- posterior::summarize_draws(
+      D,
+      "rhat", "ess_bulk", "ess_tail"
+    )
+    data.frame(
+      variable = s$variable,
+      rhat     = s$rhat,
+      ess_bulk = s$ess_bulk,
+      ess_tail = s$ess_tail,
+      stringsAsFactors = FALSE,
+      check.names      = FALSE
+    )
+  }
+
   # --- Salida ---
   if (length(taus) == 1L) {
+    diagnosis <- compute_diagnosis(fits[[1]]$draws)
+
     out <- list(
       beta           = fits[[1]]$beta,
       draws          = fits[[1]]$draws,
+      diagnosis      = diagnosis,
       accept_rate    = fits[[1]]$accept_rate,
       warmup         = burnin,
       thin           = thin,
@@ -373,9 +378,13 @@ bqr.svy <- function(formula,
     acc_vec    <- vapply(fits, `[[`, numeric(1), "accept_rate")
     names(acc_vec) <- names(fits)
 
+    diagnosis <- lapply(draws_list, compute_diagnosis)
+    names(diagnosis) <- names(fits)
+
     out <- list(
       beta           = beta_mat,
       draws          = draws_list,
+      diagnosis      = diagnosis,
       accept_rate    = acc_vec,
       warmup         = burnin,
       thin           = thin,
