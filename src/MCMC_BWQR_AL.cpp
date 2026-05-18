@@ -18,7 +18,6 @@ inline double rinvgauss(double mu, double lambda) {
   return (u <= mu / (mu + x1)) ? x1 : (mu * mu / x1);
 }
 
-
 static arma::vec draw_beta(
     const arma::mat& X,
     const arma::vec& w,
@@ -63,7 +62,6 @@ static arma::vec draw_beta(
   return mu + L * arma::randn<arma::vec>(X.n_cols);
 }
 
-
 inline double draw_sigma(
     const arma::mat& X,
     const arma::vec& w,
@@ -82,7 +80,6 @@ inline double draw_sigma(
   const double beta1 = C0 + arma::sum(w % v) + quad;
   return 1.0 / R::rgamma(alpha1, 1.0 / beta1);
 }
-
 
 static void update_v(
     arma::vec& v,

@@ -129,3 +129,4 @@ Rcpp::List MCMC_BWQR_SL_wrap(const arma::vec& y,
                              int print_progress = 1000) {
   return _mcmc_bwqr_sl_cpp(y, X, w, tau, n_mcmc, burnin, thin, b_prior_mean, B_prior_prec, print_progress);
 }
+

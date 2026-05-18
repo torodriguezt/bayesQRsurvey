@@ -16,7 +16,6 @@ inline arma::vec rmvnorm(const arma::vec& m, const arma::mat& L) {
   return m + L * randn<vec>(m.n_elem);
 }
 
-
 static double log_post(const arma::vec& beta,
                        const arma::vec& b0,
                        const arma::mat& B_inv,
@@ -24,7 +23,7 @@ static double log_post(const arma::vec& beta,
                        const arma::mat& X,
                        const arma::vec& w,
                        double tau,
-                       arma::mat& /*S (no usado)*/,
+                       arma::mat& ,
                        arma::mat& wcA,
                        arma::mat& wc)
 {
@@ -60,7 +59,6 @@ static double log_post(const arma::vec& beta,
 
   return lp;
 }
-
 
 Rcpp::List _mcmc_bwqr_ap_cpp(const arma::vec& y,
                              const arma::mat& X,
@@ -181,3 +179,4 @@ Rcpp::List _mcmc_bwqr_ap_cpp(const arma::vec& y,
     _["call"]        = "MCMC_BWQR_AP"
   );
 }
+

@@ -201,3 +201,4 @@ Rcpp::List _bwqr_weighted_em_cpp_sep(
     _["converged"] = false
   );
 }
+
