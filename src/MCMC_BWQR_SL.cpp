@@ -4,13 +4,12 @@
 #include <RcppArmadillo.h>
 #include <cmath>
 #include <algorithm>
-#include <R_ext/Utils.h>   // R_CheckUserInterrupt
-#include <R_ext/Print.h>   // Rprintf, R_FlushConsole
+#include <R_ext/Utils.h>
+#include <R_ext/Print.h>
 
 using namespace Rcpp;
 using namespace arma;
 
-// --- Safe Cholesky with growing ridge ---
 inline bool safe_chol(mat& L, const mat& A, double& ridge, const bool lower=true) {
   const double diag_mean = mean(A.diag());
   ridge = std::max(ridge, 1e-12 * std::max(1.0, std::abs(diag_mean)));
@@ -24,8 +23,8 @@ inline bool safe_chol(mat& L, const mat& A, double& ridge, const bool lower=true
 }
 
 inline vec spd_solve_from_chol(const mat& L, const vec& s) {
-  vec v = solve(trimatl(L), s, solve_opts::fast);     // L v = s
-  vec z = solve(trimatu(L.t()), v, solve_opts::fast); // L' z = v  (L.t() is upper-tri)
+  vec v = solve(trimatl(L), s, solve_opts::fast);
+  vec z = solve(trimatu(L.t()), v, solve_opts::fast);
   return z;
 }
 
@@ -34,14 +33,13 @@ static double log_post_SL_stable(const vec& beta,
                                  const mat& B_inv,
                                  const vec& y,
                                  const mat& X,
-                                 const vec& w,        // already normalized in R
+                                 const vec& w,
                                  double tau,
-                                 const mat& L_XtWX) { // chol (lower) of X' diag(w^2) X
-  // Prior
+                                 const mat& L_XtWX) {
+
   vec diff = beta - b0;
   double lp = -0.5 * dot(diff, B_inv * diff);
 
-  // Score s_tau
   vec res  = y - X * beta;
   vec ind  = tau - conv_to<vec>::from(res < 0);
   vec s    = X.t() * (w % ind);
@@ -62,7 +60,7 @@ Rcpp::List _mcmc_bwqr_sl_cpp(const arma::vec& y,
                              Rcpp::Nullable<Rcpp::NumericVector> b_prior_mean = R_NilValue,
                              Rcpp::Nullable<Rcpp::NumericMatrix> B_prior_prec = R_NilValue,
                              int print_progress = 0) {
-  // --- Basic checks ---
+
   if (y.n_elem != X.n_rows || w.n_elem != y.n_elem)
     stop("Incompatible dimensions between y, X, and w.");
   if (!(tau > 0.0 && tau < 1.0))
@@ -73,28 +71,25 @@ Rcpp::List _mcmc_bwqr_sl_cpp(const arma::vec& y,
   const int n = (int)X.n_rows;
   const int p = X.n_cols;
 
-  // --- Prior ---
   vec b0 = arma::zeros<vec>(p);
   if (b_prior_mean.isNotNull()) {
     b0 = as<vec>(b_prior_mean);
     if ((int)b0.n_elem != p) stop("b_prior_mean must have length equal to ncol(X).");
   }
 
-  mat B_inv = eye<mat>(p, p) / 1e6; // very diffuse prior by default
+  mat B_inv = eye<mat>(p, p) / 1e6;
   if (B_prior_prec.isNotNull()) {
     B_inv = as<mat>(B_prior_prec);
     if (B_inv.n_rows != (uword)p || B_inv.n_cols != (uword)p)
       stop("B_prior_prec must be a p x p matrix.");
   }
 
-  // --- Weights: use as they come (already normalized in R) ---
   if (w.min() <= 0.0) stop("All weights must be > 0.");
   const double mean_w = arma::mean(w);
   if (std::abs(mean_w - 1.0) > 1e-8) {
     Rcpp::warning("Expected weights normalized to mean 1; mean(w)=%.6f", mean_w);
   }
 
-  // --- X' diag(w^2) X and its safe Cholesky ---
   vec w2 = w % w;
   mat XtWX = X.t() * (X.each_col() % w2);
   mat L_XtWX;
@@ -102,36 +97,30 @@ Rcpp::List _mcmc_bwqr_sl_cpp(const arma::vec& y,
   if (!safe_chol(L_XtWX, XtWX, ridge_X, true))
     stop("Cholesky decomposition of XtWX failed even with ridge.");
 
-  // --- Proposal: cov = ct * tau*(1-tau) * inv((1/n) * X' diag(w^2) X) ---
-  // Match R: sigma_MH = tau*(1-tau) * chol2inv(chol((1/n)*X'W^2 X))
-  mat Sigma_base;
-  if (!arma::inv_sympd(Sigma_base, (1.0 / n) * XtWX))
-    stop("Inversion of (1/n)*X' diag(w^2) X failed.");
-  mat L_prop_base;
+  mat Prec = (1.0 / n) * XtWX;
+  mat L_Prec;
   double ridge_P = 0.0;
-  if (!safe_chol(L_prop_base, Sigma_base, ridge_P, true))
-    stop("Cholesky decomposition of inv((1/n)*XtWX) failed.");
+  if (!safe_chol(L_Prec, Prec, ridge_P, true))
+    stop("Cholesky decomposition of (1/n)*XtWX failed.");
+  mat I_p = eye<mat>(p, p);
+  mat L_prop_base = solve(trimatu(L_Prec.t()), I_p, solve_opts::fast);
 
-  // --- Output ---
   const int n_keep = (n_mcmc - burnin) / thin;
   mat beta_out(n_keep, p, fill::none);
   int accept = 0, k_out = 0;
 
-  // --- Init ---
-  vec beta = solve(X, y); // LS
+  vec beta = solve(X, y);
   double ct = 1.0;
 
-  // Precompute current log-posterior
   double logp_curr = log_post_SL_stable(beta, b0, B_inv, y, X, w, tau, L_XtWX);
 
   const int bar_width = 40;
   int last_decile = -1;
 
-  // --- MCMC ---
   for (int k = 0; k < n_mcmc; ++k) {
     if (print_progress > 0) {
       double perc = 100.0 * (k + 1.0) / n_mcmc;
-      int decile = (static_cast<int>(std::floor(perc)) / 10) * 10;  // 0,10,...,100
+      int decile = (static_cast<int>(std::floor(perc)) / 10) * 10;
       if (decile >= 10 && decile <= 100 && decile > last_decile) {
         int filled = static_cast<int>(std::round(bar_width * perc / 100.0));
         Rprintf("\r[");
@@ -143,7 +132,6 @@ Rcpp::List _mcmc_bwqr_sl_cpp(const arma::vec& y,
       }
     }
 
-    // Proposal
     vec z = randn<vec>(p);
     vec beta_prop = beta + std::sqrt(ct * tau * (1.0 - tau)) * (L_prop_base * z);
 
@@ -159,10 +147,9 @@ Rcpp::List _mcmc_bwqr_sl_cpp(const arma::vec& y,
       ++accept;
     }
 
-    // Scale adaptation (Robbins–Monro), target ~0.234
     double step = std::pow(k + 1.0, -0.8);
     ct = std::exp(std::log(ct) + step * (acc_prob - 0.234));
-    ct = std::max(1e-4, std::min(ct, 1e4)); // clamp
+    ct = std::max(1e-4, std::min(ct, 1e4));
 
     if (k >= burnin && ((k - burnin) % thin == 0)) {
       beta_out.row(k_out++) = beta.t();
@@ -182,3 +169,4 @@ Rcpp::List _mcmc_bwqr_sl_cpp(const arma::vec& y,
     _["call"]        = "MCMC_BWQR_SL_STABLE"
   );
 }
+
