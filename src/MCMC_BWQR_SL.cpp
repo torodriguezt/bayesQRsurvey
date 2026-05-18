@@ -25,7 +25,7 @@ inline bool safe_chol(mat& L, const mat& A, double& ridge, const bool lower=true
 
 inline vec spd_solve_from_chol(const mat& L, const vec& s) {
   vec v = solve(trimatl(L), s, solve_opts::fast);     // L v = s
-  vec z = solve(trimatl(L.t()), v, solve_opts::fast); // L' z = v
+  vec z = solve(trimatu(L.t()), v, solve_opts::fast); // L' z = v  (L.t() is upper-tri)
   return z;
 }
 
@@ -36,8 +36,7 @@ static double log_post_SL_stable(const vec& beta,
                                  const mat& X,
                                  const vec& w,        // already normalized in R
                                  double tau,
-                                 const mat& L_XtWX,   // chol (lower) of XtWX (with normalized w)
-                                 double lambda) {
+                                 const mat& L_XtWX) { // chol (lower) of X' diag(w^2) X
   // Prior
   vec diff = beta - b0;
   double lp = -0.5 * dot(diff, B_inv * diff);
@@ -48,7 +47,7 @@ static double log_post_SL_stable(const vec& beta,
   vec s    = X.t() * (w % ind);
 
   vec z = spd_solve_from_chol(L_XtWX, s);
-  double quad = 0.5 * (lambda / (tau * (1.0 - tau))) * dot(s, z);
+  double quad = 0.5 * (1.0 / (tau * (1.0 - tau))) * dot(s, z);
 
   return lp - quad;
 }
@@ -71,6 +70,7 @@ Rcpp::List _mcmc_bwqr_sl_cpp(const arma::vec& y,
   if (burnin >= n_mcmc) stop("burnin must be < n_mcmc.");
   if (thin <= 0)        stop("thin must be positive.");
 
+  const int n = (int)X.n_rows;
   const int p = X.n_cols;
 
   // --- Prior ---
@@ -93,26 +93,24 @@ Rcpp::List _mcmc_bwqr_sl_cpp(const arma::vec& y,
   if (std::abs(mean_w - 1.0) > 1e-8) {
     Rcpp::warning("Expected weights normalized to mean 1; mean(w)=%.6f", mean_w);
   }
-  const double lambda = sum(w); // ≈ n if mean(w)=1
 
-  // --- XtWX and its safe Cholesky ---
-  mat XtWX = X.t() * (X.each_col() % w);
+  // --- X' diag(w^2) X and its safe Cholesky ---
+  vec w2 = w % w;
+  mat XtWX = X.t() * (X.each_col() % w2);
   mat L_XtWX;
   double ridge_X = 0.0;
   if (!safe_chol(L_XtWX, XtWX, ridge_X, true))
     stop("Cholesky decomposition of XtWX failed even with ridge.");
 
-  // --- Proposal: preconditioned and stable ---
-  const double kappa = 1.0;
-  mat Prec = B_inv + kappa * XtWX;
-  mat L_Prec;
+  // --- Proposal: cov = ct * tau*(1-tau) * inv((1/n) * X' diag(w^2) X) ---
+  // Match R: sigma_MH = tau*(1-tau) * chol2inv(chol((1/n)*X'W^2 X))
+  mat Sigma_base;
+  if (!arma::inv_sympd(Sigma_base, (1.0 / n) * XtWX))
+    stop("Inversion of (1/n)*X' diag(w^2) X failed.");
+  mat L_prop_base;
   double ridge_P = 0.0;
-  if (!safe_chol(L_Prec, Prec, ridge_P, true))
-    stop("Cholesky decomposition of (B_inv + kappa*XtWX) failed.");
-
-  mat I_p = eye<mat>(p, p);
-  mat L_prop_base = solve(trimatl(L_Prec.t()), I_p, solve_opts::fast);
-  double scale0 = (p > 1) ? (2.38 * 2.38 / p) : 1.0;
+  if (!safe_chol(L_prop_base, Sigma_base, ridge_P, true))
+    stop("Cholesky decomposition of inv((1/n)*XtWX) failed.");
 
   // --- Output ---
   const int n_keep = (n_mcmc - burnin) / thin;
@@ -124,7 +122,7 @@ Rcpp::List _mcmc_bwqr_sl_cpp(const arma::vec& y,
   double ct = 1.0;
 
   // Precompute current log-posterior
-  double logp_curr = log_post_SL_stable(beta, b0, B_inv, y, X, w, tau, L_XtWX, lambda);
+  double logp_curr = log_post_SL_stable(beta, b0, B_inv, y, X, w, tau, L_XtWX);
 
   const int bar_width = 40;
   int last_decile = -1;
@@ -147,9 +145,9 @@ Rcpp::List _mcmc_bwqr_sl_cpp(const arma::vec& y,
 
     // Proposal
     vec z = randn<vec>(p);
-    vec beta_prop = beta + std::sqrt(ct * scale0) * (L_prop_base * z);
+    vec beta_prop = beta + std::sqrt(ct * tau * (1.0 - tau)) * (L_prop_base * z);
 
-    double logp_prop = log_post_SL_stable(beta_prop, b0, B_inv, y, X, w, tau, L_XtWX, lambda);
+    double logp_prop = log_post_SL_stable(beta_prop, b0, B_inv, y, X, w, tau, L_XtWX);
 
     double log_alpha = std::min(0.0, logp_prop - logp_curr);
     double u = R::runif(0.0, 1.0);
