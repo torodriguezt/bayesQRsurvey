@@ -66,6 +66,12 @@ if (!exists("%||%"))
 #' @param verbose logical flag indicating whether to print progress messages (default=TRUE).
 #' @param estimate_sigma logical flag indicating whether to estimate the scale parameter
 #' when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)
+#' @param pi_matrix an optional \eqn{n \times n} matrix of inclusion probabilities used only
+#' when \code{method = "approximate"}. The diagonal holds the first-order inclusion
+#' probabilities \eqn{\pi_i} and one triangle the second-order probabilities \eqn{\pi_{ij}}.
+#' When supplied, the unbiased Horvitz-Thompson variance estimator \eqn{\tilde{\Omega}} is used.
+#' If \code{NULL} (default), \eqn{\pi_i = 1/w_i} and only the first term of \eqn{\tilde{\Omega}}
+#' is used, yielding a biased estimator (a warning is issued).
 #'
 #' @details
 #' The bqr.svy function can estimate three types of models, where the quantile regression
@@ -145,7 +151,8 @@ bqr.svy <- function(formula,
                     burnin   = 0,
                     thin     = 1,
                     verbose  = TRUE,
-                    estimate_sigma = FALSE) {
+                    estimate_sigma = FALSE,
+                    pi_matrix = NULL) {
 
   tic    <- proc.time()[["elapsed"]]
   method <- match.arg(method)
@@ -202,6 +209,18 @@ bqr.svy <- function(formula,
   }
 
   p <- ncol(X)
+
+  if (!is.null(pi_matrix)) {
+    if (method != "approximate")
+      warning("'pi_matrix' only applies to method = 'approximate' and will be ignored.",
+              call. = FALSE)
+    pi_matrix <- as.matrix(pi_matrix)
+    if (!is.numeric(pi_matrix))
+      stop("'pi_matrix' must be a numeric matrix.", call. = FALSE)
+    if (nrow(pi_matrix) != length(y) || ncol(pi_matrix) != length(y))
+      stop("'pi_matrix' must be an n x n matrix with n = length(response).",
+           call. = FALSE)
+  }
 
   pri <- if (is.null(prior)) {
     as_bqr_prior(prior(), p = p, names_x = coef_names)
@@ -287,6 +306,7 @@ bqr.svy <- function(formula,
                         tau            = tau_i,
                         b_prior_mean   = pri$b0,
                         B_prior_prec   = solve(pri$B0),
+                        pi_matrix      = if (method == "approximate") pi_matrix else NULL,
                         print_progress = print_progress
                       )
     )
