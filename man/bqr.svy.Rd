@@ -15,7 +15,8 @@ bqr.svy(
   burnin = 0,
   thin = 1,
   verbose = TRUE,
-  estimate_sigma = FALSE
+  estimate_sigma = FALSE,
+  pi_matrix = NULL
 )
 }
 \arguments{
@@ -41,6 +42,13 @@ bqr.svy(
 
 \item{estimate_sigma}{logical flag indicating whether to estimate the scale parameter
 when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)}
+
+\item{pi_matrix}{an optional \eqn{n \times n} matrix of inclusion probabilities used only
+when \code{method = "approximate"}. The diagonal holds the first-order inclusion
+probabilities \eqn{\pi_i} and one triangle the second-order probabilities \eqn{\pi_{ij}}.
+When supplied, the unbiased Horvitz-Thompson variance estimator \eqn{\tilde{\Omega}} is used.
+If \code{NULL} (default), \eqn{\pi_i = 1/w_i} and only the first term of \eqn{\tilde{\Omega}}
+is used, yielding a biased estimator (a warning is issued).}
 }
 \value{
 An object of class \code{"bqr.svy"}, containing:
