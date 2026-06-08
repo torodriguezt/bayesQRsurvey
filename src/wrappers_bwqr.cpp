@@ -45,6 +45,7 @@ Rcpp::List _mcmc_bwqr_ap_cpp(const arma::vec& y,
                              double tau,
                              Rcpp::Nullable<Rcpp::NumericVector> b_prior_mean,
                              Rcpp::Nullable<Rcpp::NumericMatrix> B_prior_prec,
+                             Rcpp::Nullable<Rcpp::NumericMatrix> pi_matrix,
                              int print_progress = 0);
 
 Rcpp::List _mcmc_bwqr_sl_cpp(const arma::vec& y,
@@ -112,8 +113,9 @@ Rcpp::List MCMC_BWQR_AP_wrap(const arma::vec& y,
                              double tau = 0.5,
                              Rcpp::Nullable<Rcpp::NumericVector> b_prior_mean = R_NilValue,
                              Rcpp::Nullable<Rcpp::NumericMatrix> B_prior_prec = R_NilValue,
+                             Rcpp::Nullable<Rcpp::NumericMatrix> pi_matrix = R_NilValue,
                              int print_progress = 0) {
-  return _mcmc_bwqr_ap_cpp(y, X, w, n_mcmc, burnin, thin, tau, b_prior_mean, B_prior_prec, print_progress);
+  return _mcmc_bwqr_ap_cpp(y, X, w, n_mcmc, burnin, thin, tau, b_prior_mean, B_prior_prec, pi_matrix, print_progress);
 }
 
 // [[Rcpp::export(name = ".MCMC_BWQR_SL")]]

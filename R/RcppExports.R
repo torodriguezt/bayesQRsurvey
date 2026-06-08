@@ -9,8 +9,8 @@
     .Call(`_bayesQRsurvey_MCMC_BWQR_AL_wrap`, y, X, w, tau, n_mcmc, burnin, thin, b_prior_mean, B_prior_prec, c0, C0, print_progress, fix_sigma)
 }
 
-.MCMC_BWQR_AP <- function(y, X, w, n_mcmc, burnin, thin, tau = 0.5, b_prior_mean = NULL, B_prior_prec = NULL, print_progress = 0L) {
-    .Call(`_bayesQRsurvey_MCMC_BWQR_AP_wrap`, y, X, w, n_mcmc, burnin, thin, tau, b_prior_mean, B_prior_prec, print_progress)
+.MCMC_BWQR_AP <- function(y, X, w, n_mcmc, burnin, thin, tau = 0.5, b_prior_mean = NULL, B_prior_prec = NULL, pi_matrix = NULL, print_progress = 0L) {
+    .Call(`_bayesQRsurvey_MCMC_BWQR_AP_wrap`, y, X, w, n_mcmc, burnin, thin, tau, b_prior_mean, B_prior_prec, pi_matrix, print_progress)
 }
 
 .MCMC_BWQR_SL <- function(y, X, w, tau = 0.5, n_mcmc = 10000L, burnin = 2000L, thin = 10L, b_prior_mean = NULL, B_prior_prec = NULL, print_progress = 1000L) {

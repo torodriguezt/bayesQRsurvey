@@ -63,8 +63,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // MCMC_BWQR_AP_wrap
-Rcpp::List MCMC_BWQR_AP_wrap(const arma::vec& y, const arma::mat& X, const arma::vec& w, int n_mcmc, int burnin, int thin, double tau, Rcpp::Nullable<Rcpp::NumericVector> b_prior_mean, Rcpp::Nullable<Rcpp::NumericMatrix> B_prior_prec, int print_progress);
-RcppExport SEXP _bayesQRsurvey_MCMC_BWQR_AP_wrap(SEXP ySEXP, SEXP XSEXP, SEXP wSEXP, SEXP n_mcmcSEXP, SEXP burninSEXP, SEXP thinSEXP, SEXP tauSEXP, SEXP b_prior_meanSEXP, SEXP B_prior_precSEXP, SEXP print_progressSEXP) {
+Rcpp::List MCMC_BWQR_AP_wrap(const arma::vec& y, const arma::mat& X, const arma::vec& w, int n_mcmc, int burnin, int thin, double tau, Rcpp::Nullable<Rcpp::NumericVector> b_prior_mean, Rcpp::Nullable<Rcpp::NumericMatrix> B_prior_prec, Rcpp::Nullable<Rcpp::NumericMatrix> pi_matrix, int print_progress);
+RcppExport SEXP _bayesQRsurvey_MCMC_BWQR_AP_wrap(SEXP ySEXP, SEXP XSEXP, SEXP wSEXP, SEXP n_mcmcSEXP, SEXP burninSEXP, SEXP thinSEXP, SEXP tauSEXP, SEXP b_prior_meanSEXP, SEXP B_prior_precSEXP, SEXP pi_matrixSEXP, SEXP print_progressSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -77,8 +77,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
     Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericVector> >::type b_prior_mean(b_prior_meanSEXP);
     Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericMatrix> >::type B_prior_prec(B_prior_precSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericMatrix> >::type pi_matrix(pi_matrixSEXP);
     Rcpp::traits::input_parameter< int >::type print_progress(print_progressSEXP);
-    rcpp_result_gen = Rcpp::wrap(MCMC_BWQR_AP_wrap(y, X, w, n_mcmc, burnin, thin, tau, b_prior_mean, B_prior_prec, print_progress));
+    rcpp_result_gen = Rcpp::wrap(MCMC_BWQR_AP_wrap(y, X, w, n_mcmc, burnin, thin, tau, b_prior_mean, B_prior_prec, pi_matrix, print_progress));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -120,7 +121,7 @@ RcppExport SEXP _bayesQRsurvey_RcppExport_registerCCallable() {
 static const R_CallMethodDef CallEntries[] = {
     {"_bayesQRsurvey_bwqr_weighted_em_cpp_sep_wrap", (DL_FUNC) &_bayesQRsurvey_bwqr_weighted_em_cpp_sep_wrap, 14},
     {"_bayesQRsurvey_MCMC_BWQR_AL_wrap", (DL_FUNC) &_bayesQRsurvey_MCMC_BWQR_AL_wrap, 13},
-    {"_bayesQRsurvey_MCMC_BWQR_AP_wrap", (DL_FUNC) &_bayesQRsurvey_MCMC_BWQR_AP_wrap, 10},
+    {"_bayesQRsurvey_MCMC_BWQR_AP_wrap", (DL_FUNC) &_bayesQRsurvey_MCMC_BWQR_AP_wrap, 11},
     {"_bayesQRsurvey_MCMC_BWQR_SL_wrap", (DL_FUNC) &_bayesQRsurvey_MCMC_BWQR_SL_wrap, 10},
     {"_bayesQRsurvey_RcppExport_registerCCallable", (DL_FUNC) &_bayesQRsurvey_RcppExport_registerCCallable, 0},
     {NULL, NULL, 0}
