@@ -57,9 +57,8 @@ static double log_post(const arma::vec& beta,
     arma::mat Xtil = X.each_col() % psi;
     Omega = Xtil.t() * (Cpair * Xtil);
   } else {
-    arma::vec s = arma::sqrt(d0) % arma::abs(psi);
-    arma::mat Xs = X.each_col() % s;
-    Omega = Xs.t() * Xs;
+    arma::vec coeff = d0 % (psi % psi);
+    Omega = X.t() * (X.each_col() % coeff);
   }
 
   arma::mat L;
