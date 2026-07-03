@@ -10,16 +10,6 @@ using namespace Rcpp;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-inline double K_ratio(double z) {
-  if (z < 1e-8) {
-    const double z2 = z * z;
-    return 1.0 + z2 / 8.0 + z2 * z2 / 192.0;
-  }
-  double num = R::bessel_k(z, 1.5, 1);
-  double den = R::bessel_k(z, 0.5, 1);
-  return num / den;
-}
-
 Rcpp::List _bwqr_weighted_em_cpp_sep(
     const Eigen::MatrixXd& y,
     const Eigen::MatrixXd& x,
@@ -119,7 +109,7 @@ Rcpp::List _bwqr_weighted_em_cpp_sep(
 
         e_nu_inv_k(i) = sb / sa;
         const double aux_obj = sa * sb;
-        e_nu_k(i)     = (1.0 / e_nu_inv_k(i)) * K_ratio(aux_obj);
+        e_nu_k(i)     = (1.0 / e_nu_inv_k(i)) * (1.0 + 1.0 / aux_obj);
         y_aux_k(i)    = YU(i, k) - theta / e_nu_inv_k(i);
       }
       if (!e_nu_inv_k.allFinite() || !e_nu_k.allFinite())
