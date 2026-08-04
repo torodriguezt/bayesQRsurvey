@@ -213,24 +213,41 @@ summary.mo.bqr.svy <- function(object, digits = 4, ...) {
 
 
 # (Hidden) print methods for summary objects: exported, no Rd
+# `tau` optionally restricts the display to one or more quantile levels; the
+# header and printed blocks then reflect only the selection.
 #' @noRd
 #' @exportS3Method print summary.bqr.svy
-print.summary.bqr.svy <- function(x, ...) {
+print.summary.bqr.svy <- function(x, tau = NULL, ...) {
   stopifnot(inherits(x, "summary.bqr.svy"))
+
+  sel <- names(x$per_tau)
+  if (!is.null(tau)) {
+    want <- paste0("tau=", formatC(tau, format = "f", digits = 3))
+    sel  <- intersect(want, names(x$per_tau))
+    if (!length(sel)) {
+      stop("None of the requested 'tau' values are present in the summary; ",
+           "available: ",
+           paste(formatC(x$quantiles, format = "f", digits = 3), collapse = ", "),
+           ".", call. = FALSE)
+    }
+  }
+
+  shown_q <- vapply(x$per_tau[sel], function(b) b$tau, numeric(1))
+
   cat("\nMethod: ", x$method %||% "NA", "\n", sep = "")
   cat("Quantiles: ",
-      paste(formatC(x$quantiles, format = "f", digits = 3), collapse = ", "),
+      paste(formatC(shown_q, format = "f", digits = 3), collapse = ", "),
       "\n\n", sep = "")
 
   acc_global <- tryCatch({
-    vals <- vapply(x$per_tau, function(b) {
+    vals <- vapply(x$per_tau[sel], function(b) {
       a <- b$meta$accept_rate
       if (length(a) == 0) NA_real_ else mean(a, na.rm = TRUE)
     }, numeric(1))
     if (all(is.na(vals))) NA_real_ else mean(vals, na.rm = TRUE)
   }, error = function(e) NA_real_)
 
-  for (nm in names(x$per_tau)) {
+  for (nm in sel) {
     blk <- x$per_tau[[nm]]
     cat("== ", nm, " ==\n", sep = "")
 
@@ -266,12 +283,27 @@ print.summary.bqr.svy <- function(x, ...) {
   invisible(x)
 }
 
+# (Hidden) print method for the per-quantile convergence diagnostics stored in
+# a bqr.svy fit ($diagnosis). Full precision is kept in the object; only the
+# display is standardized: R-hat to `digits` decimals, ESS to whole numbers.
+#' @noRd
+#' @exportS3Method print bqr_diagnosis
+print.bqr_diagnosis <- function(x, digits = 3, ...) {
+  df <- as.data.frame(x)
+  if ("rhat" %in% names(df))
+    df$rhat <- formatC(df$rhat, format = "f", digits = digits)
+  for (nm in intersect(c("ess_bulk", "ess_tail"), names(df)))
+    df[[nm]] <- round(df[[nm]])
+  print.data.frame(df, ...)
+  invisible(x)
+}
+
 #' @noRd
 #' @exportS3Method print summary.mo.bqr.svy
-print.summary.mo.bqr.svy <- function(x, max_dir = 8, ...) {
+print.summary.mo.bqr.svy <- function(x, max_dir = 8, coefficients = TRUE, ...) {
   stopifnot(inherits(x, "summary.mo.bqr.svy"))
   dig  <- x$digits
-  rule <- strrep("\u2500", 56)
+  rule <- strrep("-", 56)
 
   # --- Header ---
   cat("\n")
@@ -298,6 +330,41 @@ print.summary.mo.bqr.svy <- function(x, max_dir = 8, ...) {
 
   # --- Group blocks by tau ---
   tau_vals <- unique(vapply(blocks, function(b) b$tau, numeric(1)))
+
+  # Per-magnitude convergence figures, reused by both display modes.
+  .conv_of <- function(tau) {
+    tb     <- blocks[vapply(blocks, function(b) b$tau == tau, logical(1))]
+    iters  <- vapply(tb, function(b) if (!is.na(b$iter)) b$iter else NA_real_, numeric(1))
+    conv   <- vapply(tb, function(b) isTRUE(b$converged), logical(1))
+    sigmas <- vapply(tb, function(b) b$sigma, numeric(1))
+    vi     <- iters[!is.na(iters)]
+    us     <- unique(round(sigmas, dig))
+    list(tau_blocks = tb, n_conv = sum(conv), n_tot = length(conv),
+         not_conv = which(!conv),
+         imin = if (length(vi)) min(vi) else NA_real_,
+         imed = if (length(vi)) stats::median(vi) else NA_real_,
+         imax = if (length(vi)) max(vi) else NA_real_,
+         sigma = if (length(us) == 1L) as.character(us)
+                 else paste0(min(sigmas), "-", max(sigmas)))
+  }
+
+  # --- Compact mode: convergence table only, one row per magnitude ---
+  if (!isTRUE(coefficients)) {
+    tab <- do.call(rbind, lapply(tau_vals, function(tau) {
+      cc <- .conv_of(tau)
+      data.frame(
+        tau        = formatC(tau, format = "f", digits = 3),
+        converged  = paste0(cc$n_conv, "/", cc$n_tot),
+        iterations = paste(cc$imin, cc$imed, cc$imax, sep = " / "),
+        sigma      = cc$sigma,
+        check.names = FALSE, stringsAsFactors = FALSE
+      )
+    }))
+    cat("\n  EM convergence by magnitude (iterations: min / median / max)\n\n")
+    print(tab, row.names = FALSE)
+    cat("\n")
+    return(invisible(x))
+  }
 
   for (tau in tau_vals) {
     tau_blocks <- blocks[vapply(blocks, function(b) b$tau == tau, logical(1))]
@@ -559,7 +626,7 @@ sigma.mo.bqr.svy <- function(x) {
 #' @title Print a \code{mo.bqr.svy} model
 #' @exportS3Method print mo.bqr.svy
 print.mo.bqr.svy <- function(x, ...) {
-  rule <- strrep("\u2500", 56)
+  rule <- strrep("-", 56)
 
   cat("\n")
   cat("  Multiple-Output Bayesian Quantile Regression\n")
