@@ -13,6 +13,8 @@ plotQuantileRegion(
   paintedArea = TRUE,
   range_y = NULL,
   main = NULL,
+  color_palette = c("default", "grey"),
+  theme_style = c("minimal", "none"),
   point_alpha = 0.3,
   point_size = 1.2,
   line_size = 0.8,
@@ -43,7 +45,16 @@ the \code{[min, max]} range for the first and second response,
 respectively.  If \code{NULL}, the ranges are computed from the data
 with a 15 percent margin.}
 
-\item{main}{Optional character string for the plot title.}
+\item{main}{Optional character string for the plot title. When \code{NULL}
+(the default) no title is drawn.}
+
+\item{color_palette}{One of \code{"default"} (a vivid multi-hue palette) or
+\code{"grey"} for a print-friendly greyscale rendering, in which nested
+regions run from light (outer) to dark (inner).}
+
+\item{theme_style}{One of \code{"minimal"} (a clean built-in preset) or
+\code{"none"}, which applies no theme so the plot honours the active
+\code{theme_set()}.}
 
 \item{point_alpha}{Numeric in \code{[0, 1]}; transparency for the
 observed-data point cloud (default = 0.3).}
@@ -70,12 +81,15 @@ each quantile region, and visualises the result using \pkg{ggplot2}.
 \details{
 Two display modes are available:
 \itemize{
-\item \code{paintedArea = TRUE} (default): Filled ribbons with contour
-outlines, using a sequential \code{"Blues"} palette.  An in-plot
-text legend shows the quantile level and approximate coverage.
-\item \code{paintedArea = FALSE}: Contour-only lines coloured by
-quantile, with a standard ggplot2 legend at the bottom.
+\item \code{paintedArea = TRUE} (default): Filled regions with contour
+outlines, one per quantile magnitude, drawn from the outermost
+(smallest \eqn{\tau}) to the innermost.
+\item \code{paintedArea = FALSE}: Contour-only lines, distinguished by
+colour and linetype.
 }
+In both modes the quantile levels are identified through a standard
+\pkg{ggplot2} legend (labelled \eqn{\tau} = level), so its position and
+styling follow the active theme.
 
 The quantile regions are built from the directional approach described in
 Nascimento & \enc{Gonçalves}{Goncalves} (2025).  For each quantile

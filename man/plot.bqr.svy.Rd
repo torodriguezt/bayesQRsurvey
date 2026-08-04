@@ -16,7 +16,7 @@
   add_points = TRUE,
   combine = TRUE,
   show_ci = FALSE,
-  ci_probs = c(0.1, 0.9),
+  ci_probs = c(0.025, 0.975),
   at = NULL,
   grid_length = 200,
   points_alpha = 0.4,
@@ -24,8 +24,8 @@
   line_size = 1.2,
   main = NULL,
   use_ggplot = TRUE,
-  theme_style = c("minimal", "classic", "bw", "light"),
-  color_palette = c("viridis", "plasma", "set2", "dark2"),
+  theme_style = c("minimal", "classic", "bw", "light", "none"),
+  color_palette = c("viridis", "plasma", "set2", "dark2", "grey", "none"),
   add_h0 = FALSE,
   add_ols = FALSE,
   ols_fit = NULL,
@@ -54,8 +54,10 @@ x-axis (if \code{NULL}, the first numeric predictor is used).
 For \code{type = "quantile"}, a character vector of coefficient names
 or integer vector of indices; when more than one is given the plot uses
 \code{facet_wrap} to show all coefficients in a single figure.
-For \code{type = "trace"} and \code{type = "density"}, a single
-coefficient name or index (default: first coefficient in the model).}
+For \code{type = "trace"} and \code{type = "density"}, a character vector
+of coefficient names or integer vector of indices; when \code{NULL} (the
+default) all coefficients are shown, and when more than one is selected the
+panels are arranged with \code{facet_wrap}.}
 
 \item{add_points}{(fit) Logical; overlay observed data points.}
 
@@ -64,8 +66,9 @@ curves in one panel; \code{FALSE} uses one panel per quantile.}
 
 \item{show_ci}{(fit) Logical; draw credible bands.}
 
-\item{ci_probs}{(fit) Length-2 numeric vector with lower/upper probabilities
-for credible bands.}
+\item{ci_probs}{Length-2 numeric vector with the lower/upper probabilities of
+the credible interval shown by the fit ribbon, the density plot bounds, and
+the quantile-process band. Default \code{c(0.025, 0.975)} (95\%).}
 
 \item{at}{(fit) Named list of fixed values for non-plotted
 covariates (see Details).}
@@ -83,10 +86,14 @@ covariates (see Details).}
 \item{use_ggplot}{Logical; if \code{TRUE}, return a ggplot object.}
 
 \item{theme_style}{(ggplot) One of \code{"minimal"}, \code{"classic"},
-\code{"bw"}, \code{"light"}.}
+\code{"bw"}, \code{"light"}, or \code{"none"}. With \code{"none"} the plot
+applies no theme and therefore honours the active \code{theme_set()}.}
 
 \item{color_palette}{(ggplot) One of \code{"viridis"}, \code{"plasma"},
-\code{"set2"}, \code{"dark2"}.}
+\code{"set2"}, \code{"dark2"}, \code{"grey"} for a print-friendly greyscale
+rendering (also switches the single-colour accents used by the trace,
+density, and quantile plots to greys), or \code{"none"} to add no colour
+scale so a user-supplied \code{scale_colour_*()} controls the mapping.}
 
 \item{add_h0}{(quantile) Logical; add a horizontal reference at \eqn{y = 0}.}
 
@@ -121,10 +128,12 @@ fixed via \code{at}.
 \item \code{type = "quantile"}: A single coefficient as a function
 of the quantile \eqn{\tau}. Optionally add a reference line at 0 and
 the corresponding OLS estimate.
-\item \code{type = "trace"}: MCMC trace for one selected
-coefficient at a chosen \eqn{\tau}.
-\item \code{type = "density"}: Posterior density for one selected
-coefficient at a chosen \eqn{\tau}.
+\item \code{type = "trace"}: MCMC trace(s) at a chosen \eqn{\tau}. One or
+several coefficients may be selected via \code{which}; when more than one
+is shown the panels are arranged with \code{facet_wrap}.
+\item \code{type = "density"}: Posterior density(ies) at a chosen
+\eqn{\tau}, faceted over the selected coefficients as for
+\code{type = "trace"}.
 }
 
 Notes:
