@@ -1,6 +1,6 @@
 Package: bayesQRsurvey
 Title: Bayesian Quantile Regression Models for Complex Survey Data Analysis
-Version: 0.2.2
+Version: 0.3.1
 Authors@R: 
     c(
         person("Tomás", "Rodríguez Taborda", email = "torodriguezt@unal.edu.co", role = c("aut", "cre")),
@@ -12,9 +12,10 @@ Description: Provides Bayesian quantile regression models for complex survey dat
     under informative sampling using survey-weighted estimators. Both single- and 
     multiple-output models are supported. To accelerate computation, all algorithms 
     are implemented in 'C++' using 'Rcpp', 'RcppArmadillo', and 'RcppEigen', and 
-    are called from 'R'. See Nascimento and Gonçalves (2024) <doi:10.1093/jssam/smae015> 
-    and Nascimento and Gonçalves (2025, in press) <https://academic.oup.com/jssam>.
+    are called from 'R'. See Nascimento and Gonçalves (2024) <doi:10.1093/jssam/smae015>
+    and Nascimento and Gonçalves (2025, in press).
 License: MIT + file LICENSE
+Depends: R (>= 3.5.0)
 LazyData: true
 LazyDataCompression: gzip
 Encoding: UTF-8

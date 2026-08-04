@@ -24,3 +24,11 @@
 ^examples_multiple_output\.R$
 \.pdf$
 ^\.claude$
+^check.*\.R$
+^MCMC_BWQR_.*\.R$
+^R/MCMC_BWQR_AL\.R$
+^R/MCMC_BWQR_SL\.R$
+^marcus_approximate\.R$
+^simulation_aux_functions\.r$
+^investigate_.*\.R$
+^articulo\.r$
