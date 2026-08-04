@@ -358,7 +358,7 @@ bqr.svy <- function(formula,
       D,
       "rhat", "ess_bulk", "ess_tail"
     )
-    data.frame(
+    out <- data.frame(
       variable = s$variable,
       rhat     = s$rhat,
       ess_bulk = s$ess_bulk,
@@ -366,6 +366,8 @@ bqr.svy <- function(formula,
       stringsAsFactors = FALSE,
       check.names      = FALSE
     )
+    class(out) <- c("bqr_diagnosis", "data.frame")
+    out
   }
 
   # --- Salida ---
