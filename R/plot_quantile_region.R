@@ -49,12 +49,15 @@
 #' @details
 #' Two display modes are available:
 #' \itemize{
-#'    \item \code{paintedArea = TRUE} (default): Filled ribbons with contour
-#'          outlines, using a sequential \code{"Blues"} palette.  An in-plot
-#'          text legend shows the quantile level and approximate coverage.
-#'    \item \code{paintedArea = FALSE}: Contour-only lines coloured by
-#'          quantile, with a standard ggplot2 legend at the bottom.
+#'    \item \code{paintedArea = TRUE} (default): Filled regions with contour
+#'          outlines, one per quantile magnitude, drawn from the outermost
+#'          (smallest \eqn{\tau}) to the innermost.
+#'    \item \code{paintedArea = FALSE}: Contour-only lines, distinguished by
+#'          colour and linetype.
 #' }
+#' In both modes the quantile levels are identified through a standard
+#' \pkg{ggplot2} legend (labelled \eqn{\tau} = level), so its position and
+#' styling follow the active theme.
 #'
 #' The quantile regions are built from the directional approach described in
 #' Nascimento & \enc{Gonçalves}{Goncalves} (2025).  For each quantile
@@ -78,7 +81,14 @@
 #'    the \code{[min, max]} range for the first and second response,
 #'    respectively.  If \code{NULL}, the ranges are computed from the data
 #'    with a 15 percent margin.
-#' @param main Optional character string for the plot title.
+#' @param main Optional character string for the plot title. When \code{NULL}
+#'   (the default) no title is drawn.
+#' @param color_palette One of \code{"default"} (a vivid multi-hue palette) or
+#'   \code{"grey"} for a print-friendly greyscale rendering, in which nested
+#'   regions run from light (outer) to dark (inner).
+#' @param theme_style One of \code{"minimal"} (a clean built-in preset) or
+#'   \code{"none"}, which applies no theme so the plot honours the active
+#'   \code{theme_set()}.
 #' @param point_alpha Numeric in \code{[0, 1]}; transparency for the
 #'    observed-data point cloud (default = 0.3).
 #' @param point_size Numeric; size of the data points (default = 1.2).
@@ -138,10 +148,15 @@ plotQuantileRegion <- function(model,
                                paintedArea   = TRUE,
                                range_y       = NULL,
                                main          = NULL,
+                               color_palette = c("default", "grey"),
+                               theme_style   = c("minimal", "none"),
                                point_alpha   = 0.3,
                                point_size    = 1.2,
                                line_size     = 0.8,
                                verbose       = FALSE) {
+
+  color_palette <- match.arg(color_palette)
+  theme_style   <- match.arg(theme_style)
 
   # --- Validate inputs ------------------------------------------------
   if (!inherits(model, "mo.bqr.svy"))
@@ -238,29 +253,38 @@ plotQuantileRegion <- function(model,
   # --- Plot style settings ----------------------------------------------
   full_palette <- c("#00E5FF", "#FF1744", "#76FF03", "#FFEA00",
                     "#D500F9", "#FF9100", "#69F0AE", "#448AFF")
-  pt_col       <- "grey25"
+  pt_col       <- "grey50"   # same observation grey as plot.bqr.svy
   pt_alpha_m   <- 0.6
   pt_size_m    <- 0.8
   border_dark  <- 0.85
   ribbon_alpha <- 0.35
   lw_mult      <- 1.3
-  refined_theme <- ggplot2::theme_minimal() +
-    ggplot2::theme(
-      plot.title       = ggplot2::element_text(size = 14, face = "bold",
-                                                hjust = 0.5, color = "grey15"),
-      axis.title       = ggplot2::element_text(size = 12, face = "bold",
-                                                color = "grey20"),
-      axis.text        = ggplot2::element_text(size = 10, color = "grey40"),
-      panel.background = ggplot2::element_rect(fill = "white", color = NA),
-      panel.grid.major = ggplot2::element_line(color = "grey88", linewidth = 0.3),
-      panel.grid.minor = ggplot2::element_blank(),
-      plot.margin      = ggplot2::margin(14, 14, 10, 10)
-    )
+  # theme_style = "none" applies no theme, so the plot honours the active
+  # theme_set() (as in plot.bqr.svy); otherwise a clean minimal preset is used.
+  refined_theme <- if (identical(theme_style, "none")) {
+    NULL
+  } else {
+    ggplot2::theme_minimal() +
+      ggplot2::theme(
+        plot.title       = ggplot2::element_text(size = 14, face = "bold",
+                                                  hjust = 0.5, color = "grey15"),
+        axis.title       = ggplot2::element_text(size = 12, face = "bold",
+                                                  color = "grey20"),
+        axis.text        = ggplot2::element_text(size = 10, color = "grey40"),
+        panel.background = ggplot2::element_rect(fill = "white", color = NA),
+        panel.grid.major = ggplot2::element_line(color = "grey88", linewidth = 0.3),
+        panel.grid.minor = ggplot2::element_blank(),
+        plot.margin      = ggplot2::margin(14, 14, 10, 10)
+      )
+  }
 
   # --- Build plot -----------------------------------------------------
   taus_order <- sort(unique(all_regions$tau))
   n_taus     <- length(taus_order)
-  palette    <- full_palette[seq_len(n_taus)]
+  # Grey palette: nested regions rendered from light (outer) to dark (inner).
+  palette    <- if (identical(color_palette, "grey"))
+    grDevices::grey.colors(n_taus, start = 0.78, end = 0.30)
+  else full_palette[seq_len(n_taus)]
 
   # Darker border variants for contour outlines
   border_palette <- vapply(palette, function(hex) {
@@ -269,91 +293,41 @@ plotQuantileRegion <- function(model,
                    rgb_val[3] * border_dark)
   }, character(1), USE.NAMES = FALSE)
 
+  # Legend labels rendered as "tau = 0.10" with a Greek tau
+  # Two-decimal labels so every level is shown consistently (0.05, 0.10, 0.15).
+  # The number is embedded as literal text (not a numeric) so plotmath does not
+  # drop the trailing zero, e.g. 0.10 instead of 0.1.
+  tau_labels <- parse(text = paste0("tau * ' = ",
+                                    formatC(taus_order, format = "f", digits = 2),
+                                    "'"))
+
   if (isTRUE(paintedArea)) {
     # --- Painted-area style -------------------------------------------
+    # Regions are drawn in ascending tau order, so the larger (outer) region
+    # is painted first and the nested ones stack on top of it. Fill and
+    # colour are mapped to tau, which yields a standard ggplot legend that
+    # honours the active theme (position, text size, ...).
+    all_regions <- all_regions[order(all_regions$tau), , drop = FALSE]
+    all_regions$tau_f <- factor(all_regions$tau, levels = taus_order)
+
     g <- ggplot2::ggplot(df_points, ggplot2::aes(x = .data$y1, y = .data$y2)) +
       refined_theme +
       ggplot2::geom_point(alpha = point_alpha * pt_alpha_m, color = pt_col,
-                          size = point_size * pt_size_m, shape = 16)
-
-    for (i in seq_len(n_taus)) {
-      reg <- all_regions[all_regions$tau == taus_order[i], , drop = FALSE]
-      contour_df <- data.frame(
-        x = c(reg$y1, rev(reg$y1), reg$y1[1]),
-        y = c(reg$min, rev(reg$max), reg$min[1])
-      )
-      g <- g +
-        ggplot2::geom_ribbon(
-          data = reg,
-          ggplot2::aes(x = .data$y1, ymin = .data$min, ymax = .data$max),
-          alpha = ribbon_alpha, fill = palette[i], inherit.aes = FALSE
-        ) +
-        ggplot2::geom_path(
-          data = contour_df,
-          ggplot2::aes(x = .data$x, y = .data$y),
-          color = border_palette[i], linewidth = line_size * lw_mult,
-          inherit.aes = FALSE
-        )
-    }
-
-    # In-plot legend with colour swatches
-    legend_labels <- paste0("tau = ", format(taus_order, nsmall = 2))
-
-    dx <- diff(y1range)
-    dy <- diff(y2range)
-    row_h   <- dy * 0.055
-    swatch  <- dx * 0.03
-    pad_x   <- dx * 0.015
-    pad_y   <- dy * 0.015
-    title_h <- row_h * 0.8
-
-    box_x     <- y1range[1] + dx * 0.02
-    box_y_top <- y2range[2] - dy * 0.02
-    box_y_bot <- box_y_top - title_h - pad_y - row_h * n_taus - pad_y
-    box_x_end <- box_x + pad_x + swatch + dx * 0.01 + dx * 0.12 + pad_x
-
-    # Vertical positions: title row, then one row per quantile
-    title_y  <- box_y_top - pad_y - title_h * 0.5
-    row_y    <- box_y_top - pad_y - title_h - pad_y * 0.5 -
-                row_h * (seq_len(n_taus) - 0.5)
-    swatch_x <- box_x + pad_x
-    label_x  <- swatch_x + swatch + dx * 0.01
-
-    g <- g +
-      # Box background
-      ggplot2::annotate(
-        "rect", xmin = box_x, xmax = box_x_end,
-        ymin = box_y_bot, ymax = box_y_top,
-        fill = "white", alpha = 0.90, color = "grey70", linewidth = 0.4
+                          size = point_size * pt_size_m, shape = 16) +
+      ggplot2::geom_ribbon(
+        data = all_regions,
+        ggplot2::aes(x = .data$y1, ymin = .data$min, ymax = .data$max,
+                     fill = .data$tau_f, colour = .data$tau_f),
+        alpha = ribbon_alpha, linewidth = line_size * lw_mult,
+        outline.type = "full", inherit.aes = FALSE
       ) +
-      # Title
-      ggplot2::annotate(
-        "text", x = box_x + (box_x_end - box_x) / 2, y = title_y,
-        label = "Quantile", hjust = 0.5, size = 3.5,
-        fontface = "bold", color = "grey25"
-      )
-
-    # Add a colour swatch + label for each quantile level
-    for (i in seq_len(n_taus)) {
-      g <- g +
-        ggplot2::annotate(
-          "rect",
-          xmin = swatch_x, xmax = swatch_x + swatch,
-          ymin = row_y[i] - row_h * 0.3, ymax = row_y[i] + row_h * 0.3,
-          fill = palette[i], alpha = 0.7,
-          color = border_palette[i], linewidth = 0.5
-        ) +
-        ggplot2::annotate(
-          "text", x = label_x, y = row_y[i],
-          label = legend_labels[i], hjust = 0, vjust = 0.5,
-          size = 3.3, color = "grey20"
-        )
-    }
-
-    g <- g +
+      ggplot2::scale_fill_manual(name = NULL, values = unname(palette),
+                                 labels = tau_labels) +
+      ggplot2::scale_colour_manual(name = NULL, values = unname(border_palette),
+                                   labels = tau_labels) +
       ggplot2::labs(
         x     = response[1], y = response[2],
-        title = if (is.null(main)) "Bivariate Quantile Regions" else main
+        title = main
       )
 
   } else {
@@ -382,23 +356,27 @@ plotQuantileRegion <- function(model,
         linewidth = line_size * lw_mult
       ) +
       ggplot2::scale_color_manual(
-        name = expression(tau), values = palette
+        name = NULL, values = unname(border_palette), labels = tau_labels
       ) +
-      ggplot2::scale_linetype_discrete(name = expression(tau)) +
+      ggplot2::scale_linetype_discrete(name = NULL, labels = tau_labels) +
       ggplot2::labs(
         x     = response[1], y = response[2],
-        title = if (is.null(main)) "Bivariate Quantile Regions" else main
-      ) +
-      ggplot2::theme(
+        title = main
+      )
+
+    # Legend placement is only imposed when the plot supplies its own theme;
+    # with theme_style = "none" the active theme_set() controls the legend.
+    if (theme_style != "none") {
+      g <- g + ggplot2::theme(
         legend.position   = "bottom",
         legend.box        = "horizontal",
-        legend.title      = ggplot2::element_text(size = 11, face = "italic"),
         legend.text       = ggplot2::element_text(size = 10),
         legend.key.width  = ggplot2::unit(1.5, "cm"),
         legend.background = ggplot2::element_rect(fill = "white", color = "grey85",
                                                    linewidth = 0.3),
         legend.margin     = ggplot2::margin(5, 8, 5, 8)
       )
+    }
   }
 
   print(g)

@@ -15,10 +15,12 @@
 #'   \item \code{type = "quantile"}: A single coefficient as a function
 #'         of the quantile \eqn{\tau}. Optionally add a reference line at 0 and
 #'         the corresponding OLS estimate.
-#'   \item \code{type = "trace"}: MCMC trace for one selected
-#'         coefficient at a chosen \eqn{\tau}.
-#'   \item \code{type = "density"}: Posterior density for one selected
-#'         coefficient at a chosen \eqn{\tau}.
+#'   \item \code{type = "trace"}: MCMC trace(s) at a chosen \eqn{\tau}. One or
+#'         several coefficients may be selected via \code{which}; when more
+#'         than one is shown the panels are arranged with \code{facet_wrap}.
+#'   \item \code{type = "density"}: Posterior density(ies) at a chosen
+#'         \eqn{\tau}, faceted over the selected coefficients as for
+#'         \code{type = "trace"}.
 #' }
 #'
 #' Notes:
@@ -50,14 +52,17 @@
 #'   For \code{type = "quantile"}, a character vector of coefficient names
 #'   or integer vector of indices; when more than one is given the plot uses
 #'   \code{facet_wrap} to show all coefficients in a single figure.
-#'   For \code{type = "trace"} and \code{type = "density"}, a single
-#'   coefficient name or index (default: first coefficient in the model).
+#'   For \code{type = "trace"} and \code{type = "density"}, a character vector
+#'   of coefficient names or integer vector of indices; when \code{NULL} (the
+#'   default) all coefficients are shown, and when more than one is selected the
+#'   panels are arranged with \code{facet_wrap}.
 #' @param add_points (fit) Logical; overlay observed data points.
 #' @param combine (fit) Logical; if multiple \code{tau}: \code{TRUE} overlays
 #'   curves in one panel; \code{FALSE} uses one panel per quantile.
 #' @param show_ci (fit) Logical; draw credible bands.
-#' @param ci_probs (fit) Length-2 numeric vector with lower/upper probabilities
-#'   for credible bands.
+#' @param ci_probs Length-2 numeric vector with the lower/upper probabilities of
+#'   the credible interval shown by the fit ribbon, the density plot bounds, and
+#'   the quantile-process band. Default \code{c(0.025, 0.975)} (95\%).
 #' @param at (fit) Named list of fixed values for non-plotted
 #'   covariates (see Details).
 #' @param grid_length (fit) Integer; number of points in the predictor grid.
@@ -67,9 +72,13 @@
 #' @param main Optional main title.
 #' @param use_ggplot Logical; if \code{TRUE}, return a ggplot object.
 #' @param theme_style (ggplot) One of \code{"minimal"}, \code{"classic"},
-#'   \code{"bw"}, \code{"light"}.
+#'   \code{"bw"}, \code{"light"}, or \code{"none"}. With \code{"none"} the plot
+#'   applies no theme and therefore honours the active \code{theme_set()}.
 #' @param color_palette (ggplot) One of \code{"viridis"}, \code{"plasma"},
-#'   \code{"set2"}, \code{"dark2"}.
+#'   \code{"set2"}, \code{"dark2"}, \code{"grey"} for a print-friendly greyscale
+#'   rendering (also switches the single-colour accents used by the trace,
+#'   density, and quantile plots to greys), or \code{"none"} to add no colour
+#'   scale so a user-supplied \code{scale_colour_*()} controls the mapping.
 #' @param add_h0 (quantile) Logical; add a horizontal reference at \eqn{y = 0}.
 #' @param add_ols (quantile) Logical; add the OLS estimate (dotted line) for the
 #'   selected coefficient.
@@ -111,7 +120,7 @@ plot.bqr.svy <- function(
     add_points = TRUE,
     combine = TRUE,
     show_ci = FALSE,
-    ci_probs = c(0.1, 0.9),
+    ci_probs = c(0.025, 0.975),
     at = NULL,
     grid_length = 200,
     points_alpha = 0.4,
@@ -119,8 +128,8 @@ plot.bqr.svy <- function(
     line_size = 1.2,
     main = NULL,
     use_ggplot = TRUE,
-    theme_style = c("minimal", "classic", "bw", "light"),
-    color_palette = c("viridis", "plasma", "set2", "dark2"),
+    theme_style = c("minimal", "classic", "bw", "light", "none"),
+    color_palette = c("viridis", "plasma", "set2", "dark2", "grey", "none"),
     add_h0 = FALSE,
     add_ols = FALSE,
     ols_fit = NULL,
@@ -156,39 +165,49 @@ plot.bqr.svy <- function(
     D[, keep, drop = FALSE]
   }
   .alpha <- function(col, a) grDevices::adjustcolor(col, alpha.f = max(min(a, 1), 0))
-  .default_at <- function(df) {
-    res <- list()
-    for (nm in names(df)) {
-      if (nm %in% c(resp)) next
-      v <- df[[nm]]
-      if (is.numeric(v))       res[[nm]] <- stats::median(v)
-      else if (is.factor(v))   res[[nm]] <- levels(v)[1L]
-      else if (is.logical(v))  res[[nm]] <- FALSE
-      else                     res[[nm]] <- v[1L]
-    }
-    res
-  }
   .make_newdata <- function(pred, at_vals, grid_len) {
-    base_vals <- .default_at(mf)
-    if (!is.null(at_vals)) base_vals[names(at_vals)] <- at_vals
-    nd <- mf[rep(1, grid_len), , drop = FALSE]
-    for (nm in names(base_vals)) {
-      if (nm %in% names(nd) && nm != pred && nm != resp) {
-        if (is.factor(mf[[nm]])) {
-          nd[[nm]] <- factor(base_vals[[nm]], levels = levels(mf[[nm]]))
-        } else {
-          nd[[nm]] <- base_vals[[nm]]
-        }
+    # Build the prediction grid from the base variables of the model formula,
+    # not from the (already transformed) model-frame columns. The model frame
+    # keeps its "terms" attribute even after subsetting, so reusing its columns
+    # makes model.matrix() treat the grid as a ready-made model frame and freeze
+    # transformed terms such as I(age^2) or log(x). Rebuilding from the base
+    # variables lets model.matrix() re-evaluate those terms over the grid, so
+    # curved fits are drawn correctly.
+    base_vars <- intersect(all.vars(stats::delete.response(tt)), names(mf))
+    if (!(pred %in% base_vars))
+      stop("Predictor '", pred, "' is not a base variable of the model.",
+           call. = FALSE)
+    if (!is.numeric(mf[[pred]]))
+      stop("The 'predictor' must be numeric.", call. = FALSE)
+
+    xr <- range(mf[[pred]], na.rm = TRUE)
+    nd <- list()
+    for (nm in base_vars) {
+      v <- mf[[nm]]
+      if (nm == pred) {
+        nd[[nm]] <- seq(xr[1], xr[2], length.out = grid_len)
+      } else if (!is.null(at_vals) && !is.null(at_vals[[nm]])) {
+        nd[[nm]] <- if (is.factor(v)) factor(at_vals[[nm]], levels = levels(v))
+                    else at_vals[[nm]]
+      } else if (is.factor(v)) {
+        nd[[nm]] <- factor(levels(v)[1L], levels = levels(v))
+      } else if (is.logical(v)) {
+        nd[[nm]] <- FALSE
+      } else if (is.numeric(v)) {
+        nd[[nm]] <- stats::median(v, na.rm = TRUE)
+      } else {
+        nd[[nm]] <- v[1L]
       }
     }
-    if (!is.numeric(mf[[pred]])) stop("The 'predictor' must be numeric.", call. = FALSE)
-    xr <- range(mf[[pred]], na.rm = TRUE)
-    nd[[pred]] <- seq(xr[1], xr[2], length.out = grid_len)
-    nd
+    as.data.frame(nd, stringsAsFactors = FALSE)
   }
 
-  # Theme and color setup for ggplot
+  # Theme setup for ggplot. "none" applies no theme, so the plot honours the
+  # active theme_set() (useful for reproducing a paper's own styling). The
+  # other styles use a light preset that inherits the base theme's colours and
+  # fonts rather than forcing greys, so the output stays clean and composable.
   .get_theme <- function(style) {
+    if (identical(style, "none")) return(NULL)
     base <- switch(style,
            "minimal" = ggplot2::theme_minimal(),
            "classic" = ggplot2::theme_classic(),
@@ -196,25 +215,27 @@ plot.bqr.svy <- function(
            "light" = ggplot2::theme_light()
     )
     base + ggplot2::theme(
-      plot.title       = ggplot2::element_text(size = 13, face = "bold",
-                                                hjust = 0, color = "grey15"),
-      plot.subtitle    = ggplot2::element_text(size = 10, hjust = 0,
-                                                color = "grey45",
-                                                margin = ggplot2::margin(2, 0, 8, 0)),
-      axis.title       = ggplot2::element_text(size = 12, color = "grey20"),
-      axis.text        = ggplot2::element_text(size = 10, color = "grey40"),
-      panel.grid.major = ggplot2::element_line(color = "grey90", linewidth = 0.3),
+      plot.title       = ggplot2::element_text(face = "bold", hjust = 0),
       panel.grid.minor = ggplot2::element_blank(),
       plot.margin      = ggplot2::margin(12, 12, 8, 8)
     )
   }
 
-  # Single-color accent for 1-tau plots; multi-tau uses the palette
-  accent_col   <- "#2171B5"   # strong blue
-  accent_fill  <- "#6BAED6"   # lighter blue
-  ref_col      <- "#D6604D"   # muted red for reference lines
+  # Single-color accent for 1-tau plots; multi-tau uses the palette.
+  # The "grey" palette swaps these accents for print-friendly greys (the
+  # reference lines stay distinguishable via their dashed/dotted linetypes).
+  if (identical(color_palette, "grey")) {
+    accent_col   <- "grey20"   # near-black for lines/points and density borders
+    accent_fill  <- "grey70"   # light grey for ribbons/density fills
+    ref_col      <- "black"    # reference lines (median, OLS): black + dashed/dotted
+  } else {
+    accent_col   <- "#2171B5"   # strong blue
+    accent_fill  <- "#6BAED6"   # lighter blue
+    ref_col      <- "#D6604D"   # muted red for reference lines
+  }
 
   .get_color_scale <- function(palette, n) {
+    if (identical(palette, "none")) return(NULL)  # user supplies their own scale
     if (n == 1L) {
       return(ggplot2::scale_color_manual(values = accent_col))
     }
@@ -222,11 +243,13 @@ plot.bqr.svy <- function(
            "viridis" = ggplot2::scale_color_viridis_d(option = "D"),
            "plasma" = ggplot2::scale_color_viridis_d(option = "C"),
            "set2" = ggplot2::scale_color_brewer(type = "qual", palette = "Set2"),
-           "dark2" = ggplot2::scale_color_brewer(type = "qual", palette = "Dark2")
+           "dark2" = ggplot2::scale_color_brewer(type = "qual", palette = "Dark2"),
+           "grey" = ggplot2::scale_color_grey(start = 0.7, end = 0.1)
     )
   }
 
   .get_fill_scale <- function(palette, n = 2L) {
+    if (identical(palette, "none")) return(NULL)  # user supplies their own scale
     if (n == 1L) {
       return(ggplot2::scale_fill_manual(values = accent_fill))
     }
@@ -234,12 +257,15 @@ plot.bqr.svy <- function(
            "viridis" = ggplot2::scale_fill_viridis_d(option = "D", alpha = 0.3),
            "plasma" = ggplot2::scale_fill_viridis_d(option = "C", alpha = 0.3),
            "set2" = ggplot2::scale_fill_brewer(type = "qual", palette = "Set2", alpha = 0.3),
-           "dark2" = ggplot2::scale_fill_brewer(type = "qual", palette = "Dark2", alpha = 0.3)
+           "dark2" = ggplot2::scale_fill_brewer(type = "qual", palette = "Dark2", alpha = 0.3),
+           "grey" = ggplot2::scale_fill_grey(start = 0.8, end = 0.3)
     )
   }
 
   # Colors (base R)
-  cols <- if (exists("hcl.colors", where = asNamespace("grDevices"), inherits = FALSE)) {
+  cols <- if (identical(color_palette, "grey")) {
+    grDevices::grey.colors(length(tau), start = 0.7, end = 0.1)
+  } else if (exists("hcl.colors", where = asNamespace("grDevices"), inherits = FALSE)) {
     grDevices::hcl.colors(length(tau), "Dark 3")
   } else {
     grDevices::rainbow(length(tau))
@@ -255,7 +281,7 @@ plot.bqr.svy <- function(
       stop("Could not determine predictor. Pass it via 'which'.", call. = FALSE)
 
     newdata <- .make_newdata(predictor, at, grid_length)
-    Xg <- stats::model.matrix(tt, newdata)
+    Xg <- stats::model.matrix(stats::delete.response(tt), newdata)
     if (!all(colnames(Xg) %in% X_colnames)) {
       stop("The design matrix of 'newdata' does not match the fit.", call. = FALSE)
     }
@@ -273,7 +299,7 @@ plot.bqr.svy <- function(
         df <- data.frame(
           x = xg,
           y = qmed,
-          tau = sprintf("%.3f", ti),
+          tau = format(ti, trim = TRUE),
           tau_numeric = ti
         )
 
@@ -310,10 +336,7 @@ plot.bqr.svy <- function(
           x = predictor,
           y = resp,
           color = expression(tau),
-          title = if (!is.null(main)) main else "Quantile Regression Fit",
-          subtitle = if (is.null(main) && length(tau) == 1L) {
-            sprintf("tau = %.3f", tau[1])
-          } else NULL
+          title = main
         )
 
       if (show_ci) {
@@ -324,15 +347,19 @@ plot.bqr.svy <- function(
         p <- p + ggplot2::facet_wrap(~ .data$tau, scales = "free_y")
       }
 
-      if (length(tau) > 1L) {
-        p <- p + ggplot2::theme(
-          legend.title = ggplot2::element_text(size = 11, face = "bold"),
-          legend.text = ggplot2::element_text(size = 10),
-          legend.position = "bottom",
-          legend.box = "horizontal"
-        )
-      } else {
-        p <- p + ggplot2::theme(legend.position = "none")
+      # Legend placement is only imposed when the plot supplies its own theme;
+      # with theme_style = "none" the active theme_set() controls the legend.
+      if (theme_style != "none") {
+        if (length(tau) > 1L) {
+          p <- p + ggplot2::theme(
+            legend.title = ggplot2::element_text(size = 11, face = "bold"),
+            legend.text = ggplot2::element_text(size = 10),
+            legend.position = "bottom",
+            legend.box = "horizontal"
+          )
+        } else {
+          p <- p + ggplot2::theme(legend.position = "none")
+        }
       }
       return(p)
 
@@ -429,8 +456,9 @@ plot.bqr.svy <- function(
                                      color = ref_col, linewidth = 0.8)
       }
 
-      p <- p + ggplot2::geom_line(color = accent_col, linewidth = line_size)
-      p <- p + ggplot2::geom_point(color = accent_col, size = 2.5, shape = 19)
+      p <- p + ggplot2::geom_line(color = accent_col, linewidth = 0.5,
+                                  linetype = "dashed")
+      p <- p + ggplot2::geom_point(color = accent_col, size = 1.6, shape = 1)
 
       if (multi_coef) {
         p <- p + ggplot2::facet_wrap(~ .data$coef, scales = "free_y")
@@ -440,11 +468,13 @@ plot.bqr.svy <- function(
         ggplot2::labs(
           x = expression(tau),
           y = if (!multi_coef) which_names[1] else NULL,
-          title = if (!is.null(main)) main else "Coefficient Across Quantiles"
+          title = main
         ) +
         ggplot2::theme(legend.position = "none")
 
-      if (multi_coef) {
+      # Bold facet strips are only imposed when the plot supplies its own theme;
+      # with theme_style = "none" the active theme_set() controls the strips.
+      if (multi_coef && theme_style != "none") {
         p <- p + ggplot2::theme(
           strip.text = ggplot2::element_text(size = 11, face = "bold")
         )
@@ -478,29 +508,35 @@ plot.bqr.svy <- function(
 
   if (type == "trace") {
     D <- .get_draws(x, tau_sel = tau[1])
-    if (is.null(which)) which <- colnames(D)[1]
-    idx <- if (is.character(which)) match(which[1], colnames(D)) else which[1]
-    if (is.na(idx) || idx < 1 || idx > ncol(D)) stop("'which' out of range.", call. = FALSE)
+    # which = NULL selects every coefficient; a name/index vector selects a subset
+    if (is.null(which)) which <- colnames(D)
+    idx <- if (is.character(which)) match(which, colnames(D)) else which
+    if (anyNA(idx) || any(idx < 1) || any(idx > ncol(D)))
+      stop("'which' out of range.", call. = FALSE)
+    nms <- colnames(D)[idx]
 
     if (use_ggplot && requireNamespace("ggplot2", quietly = TRUE)) {
-      v <- D[, idx]
-      nm <- colnames(D)[idx]
-      trace_data <- data.frame(
-        iteration = seq_along(v),
-        value = v
-      )
+      trace_data <- do.call(rbind, lapply(seq_along(idx), function(j)
+        data.frame(iteration = seq_len(nrow(D)), value = D[, idx[j]],
+                   coef = nms[j], stringsAsFactors = FALSE)))
+      trace_data$coef <- factor(trace_data$coef, levels = nms)
+      med_data <- data.frame(coef = factor(nms, levels = nms),
+                             med  = apply(D[, idx, drop = FALSE], 2, stats::median))
 
-      p <- ggplot2::ggplot(trace_data, ggplot2::aes(x = .data$iteration, y = .data$value))
+      p <- ggplot2::ggplot(trace_data,
+                           ggplot2::aes(x = .data$iteration, y = .data$value))
       p <- p + ggplot2::geom_line(color = accent_col, linewidth = 0.3, alpha = 0.7)
-      p <- p + ggplot2::geom_hline(yintercept = stats::median(v), color = ref_col,
-                                   linetype = "dashed", linewidth = 0.8)
-
+      p <- p + ggplot2::geom_hline(data = med_data,
+                                   ggplot2::aes(yintercept = .data$med),
+                                   color = ref_col, linetype = "dashed",
+                                   linewidth = 0.8)
+      if (length(idx) > 1L)
+        p <- p + ggplot2::facet_wrap(~ .data$coef, scales = "free_y")
       p <- p + .get_theme(theme_style)
       p <- p + ggplot2::labs(
         x = "Iteration",
-        y = nm,
-        title = if (!is.null(main)) main else "MCMC Trace",
-        subtitle = if (is.null(main)) sprintf("tau = %.3f", tau[1]) else NULL
+        y = if (length(idx) == 1L) nms[1] else "Value",
+        title = main
       )
       return(p)
 
@@ -511,33 +547,43 @@ plot.bqr.svy <- function(
 
   if (type == "density") {
     D <- .get_draws(x, tau_sel = tau[1])
-    if (is.null(which)) which <- colnames(D)[1]
-    idx <- if (is.character(which)) match(which[1], colnames(D)) else which[1]
-    if (is.na(idx) || idx < 1 || idx > ncol(D)) stop("'which' out of range.", call. = FALSE)
+    # which = NULL selects every coefficient; a name/index vector selects a subset
+    if (is.null(which)) which <- colnames(D)
+    idx <- if (is.character(which)) match(which, colnames(D)) else which
+    if (anyNA(idx) || any(idx < 1) || any(idx > ncol(D)))
+      stop("'which' out of range.", call. = FALSE)
+    nms <- colnames(D)[idx]
 
     if (use_ggplot && requireNamespace("ggplot2", quietly = TRUE)) {
-      v <- D[, idx]
-      nm <- colnames(D)[idx]
+      dens_data <- do.call(rbind, lapply(seq_along(idx), function(j)
+        data.frame(x = D[, idx[j]], coef = nms[j], stringsAsFactors = FALSE)))
+      dens_data$coef <- factor(dens_data$coef, levels = nms)
+      med_data <- data.frame(coef = factor(nms, levels = nms),
+                             med  = apply(D[, idx, drop = FALSE], 2, stats::median))
+      ci_data <- do.call(rbind, lapply(seq_along(idx), function(j)
+        data.frame(coef = nms[j],
+                   xint = as.numeric(stats::quantile(D[, idx[j]], probs = ci_probs)),
+                   stringsAsFactors = FALSE)))
+      ci_data$coef <- factor(ci_data$coef, levels = nms)
 
-      # Credible interval bounds
-      ci_lo <- stats::quantile(v, probs = ci_probs[1])
-      ci_hi <- stats::quantile(v, probs = ci_probs[2])
-
-      p <- ggplot2::ggplot(data.frame(x = v), ggplot2::aes(x = .data$x))
+      p <- ggplot2::ggplot(dens_data, ggplot2::aes(x = .data$x))
       p <- p + ggplot2::geom_density(fill = accent_fill, color = accent_col,
-                                     alpha = 0.5, linewidth = 0.8)
-      p <- p + ggplot2::geom_vline(xintercept = stats::median(v), color = ref_col,
-                                   linetype = "dashed", linewidth = 0.8)
-      # Show credible interval as vertical segments
-      p <- p + ggplot2::geom_vline(xintercept = c(ci_lo, ci_hi), color = "grey50",
-                                   linetype = "dotted", linewidth = 0.5)
-
+                                     alpha = 0.6, linewidth = 0.7)
+      p <- p + ggplot2::geom_vline(data = med_data,
+                                   ggplot2::aes(xintercept = .data$med),
+                                   color = ref_col, linetype = "dashed",
+                                   linewidth = 0.8)
+      p <- p + ggplot2::geom_vline(data = ci_data,
+                                   ggplot2::aes(xintercept = .data$xint),
+                                   color = "grey50", linetype = "dotted",
+                                   linewidth = 0.5)
+      if (length(idx) > 1L)
+        p <- p + ggplot2::facet_wrap(~ .data$coef, scales = "free")
       p <- p + .get_theme(theme_style)
       p <- p + ggplot2::labs(
-        x = nm,
+        x = if (length(idx) == 1L) nms[1] else "Value",
         y = "Density",
-        title = if (!is.null(main)) main else "Posterior Density",
-        subtitle = if (is.null(main)) sprintf("tau = %.3f", tau[1]) else NULL
+        title = main
       )
       return(p)
 
@@ -654,24 +700,36 @@ plot.bqr.svy <- function(
 }
 
 .plot_trace_base <- function(D, idx, tau, main) {
-  v <- D[, idx]
-  nm <- colnames(D)[idx]
-  graphics::plot(v, type = "l", col = "steelblue",
-                 main = if (is.null(main)) sprintf("MCMC trace: %s (tau=%.3f)", nm, tau[1]) else main,
-                 xlab = "Iteration", ylab = nm)
-  graphics::abline(h = stats::median(v), col = "red", lty = 2)
-  graphics::grid(nx = NA, ny = NULL)
+  if (length(idx) > 1L) {
+    op <- graphics::par(no.readonly = TRUE); on.exit(graphics::par(op))
+    r <- floor(sqrt(length(idx)))
+    graphics::par(mfrow = c(r, ceiling(length(idx) / r)))
+  }
+  for (i in idx) {
+    v <- D[, i]; nm <- colnames(D)[i]
+    graphics::plot(v, type = "l", col = "steelblue",
+                   main = if (is.null(main)) sprintf("MCMC trace: %s (tau=%.3f)", nm, tau[1]) else main,
+                   xlab = "Iteration", ylab = nm)
+    graphics::abline(h = stats::median(v), col = "red", lty = 2)
+    graphics::grid(nx = NA, ny = NULL)
+  }
   invisible(NULL)
 }
 
 .plot_density_base <- function(D, idx, tau, main) {
-  v <- D[, idx]
-  nm <- colnames(D)[idx]
-  d <- stats::density(v)
-  graphics::plot(d, main = if (is.null(main)) sprintf("Posterior density: %s (tau=%.3f)", nm, tau[1]) else main,
-                 xlab = nm)
-  graphics::abline(v = stats::median(v), col = "red", lty = 2)
-  graphics::grid(nx = NA, ny = NULL)
+  if (length(idx) > 1L) {
+    op <- graphics::par(no.readonly = TRUE); on.exit(graphics::par(op))
+    r <- floor(sqrt(length(idx)))
+    graphics::par(mfrow = c(r, ceiling(length(idx) / r)))
+  }
+  for (i in idx) {
+    v <- D[, i]; nm <- colnames(D)[i]
+    d <- stats::density(v)
+    graphics::plot(d, main = if (is.null(main)) sprintf("Posterior density: %s (tau=%.3f)", nm, tau[1]) else main,
+                   xlab = nm)
+    graphics::abline(v = stats::median(v), col = "red", lty = 2)
+    graphics::grid(nx = NA, ny = NULL)
+  }
   invisible(NULL)
 }
 
