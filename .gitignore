@@ -8,3 +8,23 @@ temp_install.*
 .httr-oauth
 .DS_Store
 .quarto
+
+# R CMD check / build artefacts
+*.Rcheck/
+*.tar.gz
+Rplots.pdf
+
+# Manuscript sources and figures (kept in Overleaf)
+*.tex
+*.pdf
+Figures/
+
+# Local development and exploration scripts
+check*.R
+compare_al.R
+investigate_*.R
+marcus_approximate.R
+reproduce_*.R
+articulo.r
+simulation_aux_functions.r
+MCMC_BWQR_*.R
