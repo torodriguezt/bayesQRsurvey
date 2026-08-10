@@ -17,6 +17,9 @@ Rplots.pdf
 # knitr::spin() byproduct (the plots are embedded in code.html)
 figure/
 
+# Generated for the JSS submission; rebuild with knitr::spin("code.R")
+code.html
+
 # Manuscript sources and figures (kept in Overleaf)
 *.tex
 *.pdf
