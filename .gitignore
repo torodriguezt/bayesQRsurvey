@@ -14,6 +14,9 @@ temp_install.*
 *.tar.gz
 Rplots.pdf
 
+# knitr::spin() byproduct (the plots are embedded in code.html)
+figure/
+
 # Manuscript sources and figures (kept in Overleaf)
 *.tex
 *.pdf
