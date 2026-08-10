@@ -2,7 +2,7 @@
 #'
 #' @description
 #' Plot method for objects of class \code{bqr.svy} produced by \code{bqr.svy()}.
-#' It can display fitted quantile curves, coefficient–quantile profiles,
+#' It can display fitted quantile curves, coefficient-quantile profiles,
 #' MCMC trace plots, and posterior densities.
 #'
 #' @details
@@ -374,7 +374,7 @@ plot.bqr.svy <- function(
     if (length(tau) < 2L) {
       stop("For 'type=\"quantile\"' you must have at least two quantiles in the object or pass 'tau' with length > 1.", call. = FALSE)
     }
-    # Coefficient selection — allow multiple coefficients
+    # Coefficient selection - allow multiple coefficients
     D_example <- .get_draws(x, tau_sel = tau[1])
     if (is.null(which)) which <- colnames(D_example)[1]
 
@@ -597,7 +597,7 @@ plot.bqr.svy <- function(
 
 
 # --------------------------------------------------------------------
-# Helper functions para base R
+# Helper functions for base R
 # --------------------------------------------------------------------
 
 .plot_fit_base <- function(x, predictor, tau, mf, tt, X_colnames, resp, newdata, Xg,

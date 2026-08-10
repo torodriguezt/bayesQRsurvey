@@ -78,9 +78,9 @@ if (!exists("%||%"))
 #' coefficients are defined at the super-population level, and their estimators are built upon
 #' the survey weights.
 #' \itemize{
-#'   \item \code{"ald"} – The asymmetric Laplace distribution as working likelihood.
-#'   \item \code{"score"} – A score based likelihood function.
-#'   \item \code{"approximate"} – A pseudolikelihood function based on a Gaussian approximation.
+#'   \item \code{"ald"} - The asymmetric Laplace distribution as working likelihood.
+#'   \item \code{"score"} - A score based likelihood function.
+#'   \item \code{"approximate"} - A pseudolikelihood function based on a Gaussian approximation.
 #' }
 #'
 #' @return An object of class \code{"bqr.svy"}, containing:
@@ -99,7 +99,7 @@ if (!exists("%||%"))
 #' @references
 #' Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2024).
 #' Bayesian Quantile Regression Models for Complex Survey Data Under Informative Sampling.
-#' \emph{Journal of Survey Statistics and Methodology}, 12(4), 1105–1130.
+#' \emph{Journal of Survey Statistics and Methodology}, 12(4), 1105-1130.
 #' \doi{10.1093/jssam/smae015}
 #'
 #' @examples
@@ -226,7 +226,7 @@ bqr.svy <- function(formula,
     as_bqr_prior(prior(), p = p, names_x = coef_names)
   } else if (inherits(prior, "prior")) {
     as_bqr_prior(prior, p = p, names_x = coef_names)
-  } else if (inherits(prior, "bqr_prior")) { # compatibilidad hacia atrás
+  } else if (inherits(prior, "bqr_prior")) { # backwards compatibility
     prior
   } else {
     stop("'prior' must be NULL, a 'prior' object (see prior()), or a 'bqr_prior' (legacy).", call. = FALSE)
@@ -283,7 +283,7 @@ bqr.svy <- function(formula,
                             thin           = thin,
                             b_prior_mean   = pri$b0,
                             B_prior_prec   = solve(pri$B0),
-                            fix_sigma      = 1,  # σ^2 fija = 1
+                            fix_sigma      = 1,  # sigma^2 held fixed at 1
                             print_progress = print_progress
                           )
                         }
@@ -370,7 +370,7 @@ bqr.svy <- function(formula,
     out
   }
 
-  # --- Salida ---
+  # --- Output ---
   if (length(taus) == 1L) {
     diagnosis <- compute_diagnosis(fits[[1]]$draws)
 
