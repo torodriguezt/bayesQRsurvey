@@ -23,10 +23,12 @@ code.html
 # Vignettes are rendered by R CMD build; only the .Rmd is versioned
 vignettes/*.html
 
-# Manuscript sources and figures (kept in Overleaf)
-*.tex
-*.pdf
-Figures/
+# Manuscript sources and figures (kept in Overleaf).
+# The rules are anchored to the repository root so that they do not also
+# match man/figures/, which holds the images shown in README.md.
+/*.tex
+/*.pdf
+/Figures/
 
 # Local development and exploration scripts
 check*.R
