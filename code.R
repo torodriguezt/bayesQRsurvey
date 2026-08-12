@@ -192,17 +192,13 @@ fit_mo
 print(summary(fit_mo), coefficients = FALSE)
 
 ## Figure 5: nested quantile regions for a two-year-old boy.
-## plotQuantileRegion() returns a list, so the plot is taken from $plot.
 
-reg <- plotQuantileRegion(fit_mo, response = c("wgt", "hgt"),
-                          datafile = Anthro, xValue = c(1, 2, 4, 0),
-                          ngridpoints = 450, paintedArea = FALSE,
-                          color_palette = "grey", theme_style = "none")
+plotQuantileRegion(fit_mo, response = c("wgt", "hgt"),
+                   datafile = Anthro, xValue = c(1, 2, 4, 0),
+                   ngridpoints = 450, paintedArea = FALSE,
+                   color_palette = "grey", theme_style = "none")
 
-reg$plot
-
-ggsave(file.path(OUT, "plotQuantileRegion1.pdf"), reg$plot,
-       width = 6.5, height = 5.5)
+ggsave(file.path(OUT, "plotQuantileRegion1.pdf"), width = 6.5, height = 5.5)
 
 ## The same fit with the directions supplied through U and gamma_U.
 
