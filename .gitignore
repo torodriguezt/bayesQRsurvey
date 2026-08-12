@@ -20,6 +20,9 @@ figure/
 # Generated for the JSS submission; rebuild with knitr::spin("code.R")
 code.html
 
+# Vignettes are rendered by R CMD build; only the .Rmd is versioned
+vignettes/*.html
+
 # Manuscript sources and figures (kept in Overleaf)
 *.tex
 *.pdf
