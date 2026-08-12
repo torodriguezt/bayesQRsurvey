@@ -174,7 +174,7 @@ bqr.svy <- function(formula,
     stop("'niter' and 'thin' must be > 0, and 'burnin' >= 0.", call. = FALSE)
   if (!is.logical(verbose) || length(verbose) != 1)
     stop("'verbose' must be a logical value (TRUE or FALSE).", call. = FALSE)
-  print_progress <- if (verbose) 1L else 0L  # habilita barra/porcentaje en C++
+  print_progress <- if (verbose) 1L else 0L  # enables the C++ progress bar
 
   if (is.null(data)) data <- environment(formula)
   mf <- model.frame(formula, data, na.action = NULL)
