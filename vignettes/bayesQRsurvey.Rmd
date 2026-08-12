@@ -1,0 +1,232 @@
+---
+title: "Bayesian quantile regression for complex survey data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Bayesian quantile regression for complex survey data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>",
+                      fig.width = 7, fig.height = 4.5, fig.align = "center")
+```
+
+## Overview
+
+**bayesQRsurvey** fits Bayesian quantile regression models to data collected
+under informative sampling designs, where the probability of selection is
+related to the response and ignoring it biases the estimates. The survey
+weights enter the working likelihood directly, so that the sampling design is
+accounted for in the posterior rather than through a subsequent correction.
+
+The package covers two model families:
+
+* `bqr.svy()` fits models with a **single** response by MCMC. Three working
+  likelihoods are available through `method`: `"ald"`, based on the asymmetric
+  Laplace distribution, which is the default and the fastest; and `"score"`
+  and `"approximate"`, which build a design-based variance into the likelihood
+  itself.
+* `mo.bqr.svy()` fits models with a **vector** response by an EM algorithm,
+  following the directional approach. Here a quantile is not a curve but a
+  nested family of convex regions.
+
+Both functions return objects with `print()`, `summary()` and `plot()`
+methods. This vignette introduces them through a worked example.
+
+```{r, message = FALSE}
+library("bayesQRsurvey")
+library("ggplot2")
+```
+
+Every plotting function accepts `color_palette = "grey"` for a print-friendly
+greyscale rendering, and `theme_style = "none"`, which applies no theme of its
+own so that the plot honours the one set by the user. The settings below are
+used throughout.
+
+```{r}
+theme_set(theme_classic(base_size = 14) +
+  theme(axis.text         = element_text(colour = "black"),
+        legend.title      = element_blank(),
+        legend.background = element_blank()))
+
+scale_tau <- scale_colour_manual(
+  values = c("0.1" = "grey70", "0.5" = "grey40", "0.9" = "black"),
+  breaks = c("0.9", "0.5", "0.1"),
+  labels = c("0.9" = expression(tau == 0.9),
+             "0.5" = expression(tau == 0.5),
+             "0.1" = expression(tau == 0.1)))
+```
+
+## Data
+
+The `Anthro` data set holds anthropometric measurements of 985 children,
+together with the survey weight in `dweight`. Age is recorded in months, so it
+is converted to years, and `sex` is labelled for readability.
+
+```{r}
+data("Anthro", package = "bayesQRsurvey")
+
+Anthro$age <- Anthro$age / 12
+Anthro$sex <- factor(Anthro$sex, levels = c("1", "0"),
+                     labels = c("Boys", "Girls"))
+
+str(Anthro)
+```
+
+## Single-output models
+
+Weight is modelled as a quadratic function of age, adjusting for sex, at three
+quantile levels. The sampling weights are passed through `weights` and the
+levels through `quantile`. Setting `verbose = FALSE` suppresses the progress
+bar. The chains used here are short so that the vignette builds quickly;
+longer runs are advisable in practice.
+
+```{r}
+set.seed(50)
+fit_ald <- bqr.svy(wgt ~ age + I(age^2) + sex, weights = dweight,
+                   data = Anthro, quantile = c(0.1, 0.5, 0.9),
+                   niter = 6000, burnin = 3000, thin = 1, verbose = FALSE)
+
+fit_ald
+```
+
+The `summary()` method reports posterior means together with 95% credible
+intervals. Passing `tau` to its `print()` method restricts the output to a
+single quantile level.
+
+```{r}
+print(summary(fit_ald), tau = 0.5)
+```
+
+Convergence diagnostics are computed for every level and stored in
+`$diagnosis`.
+
+```{r}
+fit_ald$diagnosis[["tau=0.500"]]
+```
+
+### Graphical output
+
+The `plot()` method takes a `type` argument. Trace plots and marginal
+posterior densities assess convergence; when `which` is omitted, every
+coefficient is displayed.
+
+```{r, fig.height = 5}
+plot(fit_ald, type = "trace", tau = 0.5,
+     color_palette = "grey", theme_style = "none")
+```
+
+```{r, fig.height = 5}
+plot(fit_ald, type = "density", tau = 0.5,
+     color_palette = "grey", theme_style = "none")
+```
+
+Setting `type = "fit"` draws the fitted quantile curves against a chosen
+predictor. Here `color_palette = "none"` leaves the colours to the manual
+scale defined above.
+
+```{r}
+plot(fit_ald, type = "fit", which = "age", add_points = FALSE,
+     color_palette = "none", theme_style = "none") +
+  scale_tau + labs(x = "Age (years)", y = "Weight (kg)") +
+  theme(legend.position = "inside", legend.position.inside = c(0.85, 0.18))
+```
+
+Fitting over a grid of quantile levels and setting `type = "quantile"` shows
+how each coefficient varies across the conditional distribution. The argument
+`add_ols = TRUE` overlays the least-squares estimate for comparison.
+
+```{r, fig.height = 5}
+set.seed(50)
+fit_grid <- bqr.svy(wgt ~ age + I(age^2) + sex, weights = dweight,
+                    data = Anthro, quantile = seq(0.1, 0.9, by = 0.2),
+                    niter = 6000, burnin = 3000, thin = 1, verbose = FALSE)
+
+plot(fit_grid, type = "quantile", add_ols = TRUE,
+     color_palette = "grey", theme_style = "none") + labs(x = "quantile")
+```
+
+The quadratic term attenuates towards the upper tail, a pattern that a single
+summary of the conditional distribution, such as the least-squares fit, cannot
+reveal.
+
+### Priors and estimation methods
+
+Prior distributions are specified with `prior()` and supplied through the
+`prior` argument. The default is vague.
+
+```{r}
+myprior <- prior(beta_x_mean = rep(0, 4), beta_x_cov = 25)
+
+set.seed(50)
+fit_prior <- bqr.svy(wgt ~ age + I(age^2) + sex, weights = dweight,
+                     data = Anthro, quantile = 0.5,
+                     niter = 6000, burnin = 3000, thin = 1,
+                     prior = myprior, verbose = FALSE)
+```
+
+The remaining two methods are selected through `method`. Both are adaptive
+Metropolis-Hastings samplers and require longer chains than the default
+method.
+
+```{r}
+set.seed(50)
+fit_score <- bqr.svy(wgt ~ age + I(age^2) + sex, weights = dweight,
+                     data = Anthro, method = "score", quantile = 0.5,
+                     niter = 20000, burnin = 5000, thin = 1, verbose = FALSE)
+
+summary(fit_score)
+```
+
+## Multiple-output models
+
+With two responses a quantile is a region rather than a curve. The model is
+specified by binding the responses on the left-hand side of the formula, and
+the directions used to build the region are generated automatically according
+to `n_dir`.
+
+```{r}
+set.seed(50)
+fit_mo <- mo.bqr.svy(cbind(wgt, hgt) ~ age + I(age^2) + sex,
+                     weights = dweight, data = Anthro,
+                     quantile = c(0.05, 0.10, 0.15),
+                     n_dir = 20, max_iter = 2000, verbose = FALSE)
+
+fit_mo
+```
+
+Each direction contributes one half-space, and the quantile region is their
+intersection, so it is the region as a whole rather than any individual
+direction that is of interest. The compact form of the summary reports only
+whether the directional fits converged.
+
+```{r}
+print(summary(fit_mo), coefficients = FALSE)
+```
+
+The function `plotQuantileRegion()` intersects the half-spaces for a chosen
+covariate profile and draws the resulting contours over the observed
+responses. The profile is supplied through `xValue`, in the order of the
+design-matrix columns, here `(Intercept)`, `age`, `I(age^2)` and `sexGirls`,
+evaluated at a two-year-old boy.
+
+```{r, fig.height = 5.5}
+plotQuantileRegion(fit_mo, response = c("wgt", "hgt"),
+                   datafile = Anthro, xValue = c(1, 2, 4, 0),
+                   ngridpoints = 200, paintedArea = FALSE,
+                   color_palette = "grey", theme_style = "none")
+```
+
+The contours are nested and convex, and they are read from the outside in: the
+smallest quantile magnitude traces the outermost region, and each larger one a
+more central region. Because every region is tied to a covariate profile,
+evaluating the function at different profiles shows how the joint distribution
+of weight and height shifts with age and sex, which a separate analysis of
+either response cannot recover.
+
+## References
+
+Nascimento ML, Gonçalves KCM (2024). "Bayesian Quantile Regression Models for
+Complex Survey Data Under Informative Sampling."
+*Journal of Survey Statistics and Methodology*, **12**(4), 1105-1130.
