@@ -98,7 +98,7 @@ ggsave(file.path(OUT, "figure2.pdf"),
 set.seed(50)
 fit_ald <- bqr.svy(wgt ~ age + I(age^2) + sex, weights = dweight,
                    data = Anthro, quantile = c(0.1, 0.5, 0.9),
-                   niter = 20000, burnin = 10000, thin = 1)
+                   niter = 20000, burnin = 10000, thin = 1, verbose = FALSE)
 
 fit_ald
 print(summary(fit_ald), tau = 0.5)
@@ -139,7 +139,8 @@ quantvec <- seq(0.1, 0.9, by = 0.05)
 set.seed(50)
 fit_ald_grid <- bqr.svy(wgt ~ age + I(age^2) + sex, weights = dweight,
                         data = Anthro, quantile = quantvec,
-                        niter = 50000, burnin = 25000, thin = 1)
+                        niter = 50000, burnin = 25000, thin = 1,
+                        verbose = FALSE)
 
 p10 <- plot(fit_ald_grid, type = "quantile",
             which = c("(Intercept)", "age", "I(age^2)", "sexGirls"),
@@ -157,13 +158,13 @@ set.seed(50)
 fit_score <- bqr.svy(wgt ~ age + I(age^2) + sex,
                      weights = dweight, data = Anthro, method = "score",
                      quantile = c(0.1, 0.5, 0.9),
-                     niter = 50000, burnin = 10000, thin = 1)
+                     niter = 50000, burnin = 10000, thin = 1, verbose = FALSE)
 
 set.seed(50)
 fit_ap <- bqr.svy(wgt ~ age + I(age^2) + sex, weights = dweight,
                   data = Anthro, method = "approximate",
                   quantile = c(0.1, 0.5, 0.9),
-                  niter = 350000, burnin = 50000, thin = 50)
+                  niter = 350000, burnin = 50000, thin = 50, verbose = FALSE)
 
 ## Fit under an informative prior.
 
@@ -173,7 +174,7 @@ set.seed(50)
 fit_ald_prior <- bqr.svy(wgt ~ age + I(age^2) + sex, weights = dweight,
                          data = Anthro, quantile = c(0.1, 0.5, 0.9),
                          niter = 20000, burnin = 10000, thin = 1,
-                         prior = myprior)
+                         prior = myprior, verbose = FALSE)
 
 
 ## Section 4.2: Example 2, multiple-output.
@@ -186,7 +187,7 @@ set.seed(50)
 fit_mo <- mo.bqr.svy(cbind(wgt, hgt) ~ age + I(age^2) + sex,
                      weights = dweight, data = Anthro,
                      quantile = c(0.05, 0.10, 0.15),
-                     n_dir = 20, max_iter = 2000)
+                     n_dir = 20, max_iter = 2000, verbose = FALSE)
 
 fit_mo
 print(summary(fit_mo), coefficients = FALSE)
@@ -212,7 +213,8 @@ set.seed(50)
 fit_mo_manual <- mo.bqr.svy(cbind(wgt, hgt) ~ age + I(age^2) + sex,
                             weights = dweight, data = Anthro,
                             quantile = c(0.05, 0.10, 0.15),
-                            U = U, gamma_U = gamma_U, max_iter = 2000)
+                            U = U, gamma_U = gamma_U, max_iter = 2000,
+                            verbose = FALSE)
 
 
 ## Appendix, Table 1: the three methods side by side.
