@@ -1,5 +1,8 @@
 ---
 title: "Bayesian quantile regression for complex survey data"
+author: |
+  Tomás Rodríguez Taborda, Johnatan Cardona Jiménez,
+  Marcus L. Nascimento, Kelly C. M. Gonçalves
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Bayesian quantile regression for complex survey data}
@@ -22,17 +25,23 @@ accounted for in the posterior rather than through a subsequent correction.
 
 The package covers two model families:
 
-* `bqr.svy()` fits models with a **single** response by MCMC. Three working
-  likelihoods are available through `method`: `"ald"`, based on the asymmetric
-  Laplace distribution, which is the default and the fastest; and `"score"`
-  and `"approximate"`, which build a design-based variance into the likelihood
-  itself.
+* `bqr.svy()` fits models with a **single** response by MCMC, following
+  Nascimento and Gonçalves (2024). Three working likelihoods are available
+  through `method`: `"ald"`, based on the asymmetric Laplace distribution,
+  which is the default and the fastest; and `"score"` and `"approximate"`,
+  which build a design-based variance into the likelihood itself.
 * `mo.bqr.svy()` fits models with a **vector** response by an EM algorithm,
-  following the directional approach. Here a quantile is not a curve but a
-  nested family of convex regions.
+  following the directional approach of Nascimento and Gonçalves (2026). Here
+  a quantile is not a curve but a nested family of convex regions.
 
 Both functions return objects with `print()`, `summary()` and `plot()`
 methods. This vignette introduces them through a worked example.
+
+The package is installed from CRAN in the usual way.
+
+```{r, eval = FALSE}
+install.packages("bayesQRsurvey")
+```
 
 ```{r, message = FALSE}
 library("bayesQRsurvey")
@@ -230,3 +239,9 @@ either response cannot recover.
 Nascimento ML, Gonçalves KCM (2024). "Bayesian Quantile Regression Models for
 Complex Survey Data Under Informative Sampling."
 *Journal of Survey Statistics and Methodology*, **12**(4), 1105-1130.
+[doi:10.1093/jssam/smae015](https://doi.org/10.1093/jssam/smae015)
+
+Nascimento ML, Gonçalves KCM (2026). "A Bayesian Approach to Multiple-Output
+Quantile Regression Analysis under Informative Sampling."
+*Journal of Survey Statistics and Methodology*, smaf040.
+[doi:10.1093/jssam/smaf040](https://doi.org/10.1093/jssam/smaf040)
