@@ -126,6 +126,11 @@ Complex Survey Data Under Informative Sampling." *Journal of Survey Statistics
 and Methodology*, **12**(4), 1105–1130.
 [doi:10.1093/jssam/smae015](https://doi.org/10.1093/jssam/smae015)
 
+Nascimento ML, Gonçalves KCM (2026). "A Bayesian Approach to Multiple-Output
+Quantile Regression Analysis under Informative Sampling." *Journal of Survey
+Statistics and Methodology*, smaf040.
+[doi:10.1093/jssam/smaf040](https://doi.org/10.1093/jssam/smaf040)
+
 ## Authors
 
 - **Tomás Rodríguez Taborda**, Universidad Nacional de Colombia
