@@ -33,3 +33,7 @@
 ^code\.R$
 ^code\.html$
 ^figure$
+\.tex$
+^compare_al\.R$
+^reproduce_.*\.R$
+^Figures$
