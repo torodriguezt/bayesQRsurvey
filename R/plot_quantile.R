@@ -1,4 +1,4 @@
-#' Plot Method for Bayesian Weighted Quantile Regression
+#' Plot method for Bayesian quantile regression fits
 #'
 #' @description
 #' Plot method for objects of class \code{bqr.svy} produced by \code{bqr.svy()}.
@@ -62,7 +62,7 @@
 #' @param show_ci (fit) Logical; draw credible bands.
 #' @param ci_probs Length-2 numeric vector with the lower/upper probabilities of
 #'   the credible interval shown by the fit ribbon, the density plot bounds, and
-#'   the quantile-process band. Default \code{c(0.025, 0.975)} (95\%).
+#'   the quantile-process band. Default \code{c(0.025, 0.975)} (95%).
 #' @param at (fit) Named list of fixed values for non-plotted
 #'   covariates (see Details).
 #' @param grid_length (fit) Integer; number of points in the predictor grid.
@@ -140,7 +140,6 @@ plot.bqr.svy <- function(
   theme_style <- match.arg(theme_style)
   color_palette <- match.arg(color_palette)
 
-  is_multi <- inherits(x, "bwqr_fit_multi")
   taus_all <- as.numeric(x$quantile)
   if (is.null(tau)) tau <- taus_all
   tau <- sort(intersect(taus_all, unique(as.numeric(tau))))
@@ -155,11 +154,7 @@ plot.bqr.svy <- function(
 
   # Helpers --------------------------
   .get_draws <- function(obj, tau_sel = NULL) {
-    D <- if (inherits(obj, "bwqr_fit_multi")) {
-      idx <- which.min(abs(obj$quantile - tau_sel))
-      obj$draws[[idx]]
-    } else obj$draws
-    D <- as.matrix(D)
+    D <- .draws_for_tau(obj, tau_sel, include_sigma = FALSE)
     keep <- intersect(colnames(D), X_colnames)
     if (!length(keep)) stop("The 'draws' do not contain the expected coefficient columns.", call. = FALSE)
     D[, keep, drop = FALSE]
@@ -605,11 +600,7 @@ plot.bqr.svy <- function(
                            points_alpha, point_size, line_size, main, cols) {
 
   .get_draws <- function(obj, tau_sel = NULL) {
-    D <- if (inherits(obj, "bwqr_fit_multi")) {
-      idx <- which.min(abs(obj$quantile - tau_sel))
-      obj$draws[[idx]]
-    } else obj$draws
-    D <- as.matrix(D)
+    D <- .draws_for_tau(obj, tau_sel, include_sigma = FALSE)
     keep <- intersect(colnames(D), X_colnames)
     D[, keep, drop = FALSE]
   }
@@ -734,14 +725,3 @@ plot.bqr.svy <- function(
 }
 
 
-#' @rdname plot.bqr.svy
-#' @export
-plot.bwqr_fit <- function(x, ...) {
-  plot.bqr.svy(x, ...)
-}
-
-#' @rdname plot.bqr.svy
-#' @export
-plot.bwqr_fit_multi <- function(x, ...) {
-  plot.bqr.svy(x, ...)
-}
