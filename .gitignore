@@ -13,6 +13,13 @@ temp_install.*
 *.Rcheck/
 *.tar.gz
 Rplots.pdf
+revdep/
+
+# R CMD build / install byproducts of the vignette (only vignettes/*.Rmd is
+# versioned). Anchored to the root so they do not match man/ or R/ content.
+/doc/
+/Meta/
+inst/doc/
 
 # knitr::spin() byproduct (the plots are embedded in code.html)
 figure/
@@ -41,3 +48,10 @@ MCMC_BWQR_*.R
 
 # JSS submission bundle (rebuilt on demand)
 JSS-submission/
+
+# Editor and IDE settings: machine-specific, not part of the package
+.vscode/
+.idea/
+
+# Build output of the companion Next.js website
+.next/
