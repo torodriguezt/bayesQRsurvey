@@ -37,3 +37,6 @@
 ^compare_al\.R$
 ^reproduce_.*\.R$
 ^Figures$
+^JSS-submission$
+^\.Rhistory$
+^Rplots\.pdf$
