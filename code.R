@@ -4,16 +4,9 @@
 ## Reproduces every figure, output and table in the manuscript.
 ## Figures are written to ./Figures. Runtime: about two minutes.
 
-for (lib in .libPaths()) {
-  if (dir.exists(file.path(lib, "bayesQRsurvey")))
-    remove.packages("bayesQRsurvey", lib = lib)
-}
+## Installation. The results below were produced with bayesQRsurvey 0.3.1.
 
-if (!requireNamespace("remotes", quietly = TRUE))
-  install.packages("remotes", repos = "https://cloud.r-project.org")
-
-remotes::install_github("torodriguezt/bayesQRsurvey",
-                        upgrade = "never", force = TRUE)
+install.packages("bayesQRsurvey", repos = "https://cloud.r-project.org")
 
 library("bayesQRsurvey")
 library("ggplot2")
