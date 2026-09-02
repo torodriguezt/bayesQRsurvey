@@ -3,9 +3,7 @@
 \name{plot.bqr.svy}
 \alias{plot.bqr.svy}
 \alias{plot}
-\alias{plot.bwqr_fit}
-\alias{plot.bwqr_fit_multi}
-\title{Plot Method for Bayesian Weighted Quantile Regression}
+\title{Plot method for Bayesian quantile regression fits}
 \usage{
 \method{plot}{bqr.svy}(
   x,
@@ -32,10 +30,6 @@
   ols_weights = NULL,
   ...
 )
-
-\method{plot}{bwqr_fit}(x, ...)
-
-\method{plot}{bwqr_fit_multi}(x, ...)
 }
 \arguments{
 \item{x}{Object of class \code{bqr.svy}.}
@@ -115,7 +109,7 @@ OLS internally (length must match \code{nrow(x$model)}).}
 }
 \description{
 Plot method for objects of class \code{bqr.svy} produced by \code{bqr.svy()}.
-It can display fitted quantile curves, coefficient–quantile profiles,
+It can display fitted quantile curves, coefficient-quantile profiles,
 MCMC trace plots, and posterior densities.
 }
 \details{
@@ -129,8 +123,8 @@ fixed via \code{at}.
 of the quantile \eqn{\tau}. Optionally add a reference line at 0 and
 the corresponding OLS estimate.
 \item \code{type = "trace"}: MCMC trace(s) at a chosen \eqn{\tau}. One or
-several coefficients may be selected via \code{which}; when more than one
-is shown the panels are arranged with \code{facet_wrap}.
+several coefficients may be selected via \code{which}; when more
+than one is shown the panels are arranged with \code{facet_wrap}.
 \item \code{type = "density"}: Posterior density(ies) at a chosen
 \eqn{\tau}, faceted over the selected coefficients as for
 \code{type = "trace"}.
