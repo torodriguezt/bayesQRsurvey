@@ -1,5 +1,4 @@
-#' bayesQRsurvey: Bayesian Weighted Quantile Regression for complex survey designs
-#' with EM and MCMC Algorithm
+#' bayesQRsurvey: Bayesian quantile regression models for complex survey data
 #'
 #' The bayesQRsurvey package provides Bayesian quantile regression methods for complex
 #' survey designs with two main functions:
