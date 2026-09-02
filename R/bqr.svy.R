@@ -83,18 +83,30 @@ if (!exists("%||%"))
 #'   \item \code{"approximate"} - A pseudolikelihood function based on a Gaussian approximation.
 #' }
 #'
-#' @return An object of class \code{"bqr.svy"}, containing:
-#' \item{beta}{Posterior mean estimates of regression coefficients.}
-#' \item{draws}{Posterior draws from the MCMC sampler.}
-#' \item{accept_rate}{Average acceptance rate (if available).}
-#' \item{warmup, thin}{MCMC control parameters used during sampling.}
+#' @return An object of class \code{"bqr.svy"}. Its shape does not depend on how
+#' many quantiles were fitted: quantile-specific components always hold one entry
+#' per quantile, named \code{"tau=0.500"} and so on, and a single quantile is
+#' simply the one-entry case. The components are:
+#' \item{beta}{Matrix of posterior mean estimates of the regression coefficients,
+#'   with one row per coefficient and one column per quantile.}
+#' \item{draws}{Named list of posterior draw matrices, one per quantile.}
+#' \item{diagnosis}{Named list of convergence diagnostics, one per quantile.}
+#' \item{accept_rate}{Named vector of average acceptance rates, one per quantile
+#'   (\code{NA} for \code{method = "ald"}, which uses Gibbs sampling).}
 #' \item{quantile}{The quantile(s) fitted.}
+#' \item{weights, n}{The survey weights supplied and the number of observations.}
+#' \item{warmup, thin, niter}{MCMC control parameters used during sampling.}
 #' \item{prior}{Prior specification used.}
-#' \item{formula, terms, model}{Model specification details.}
+#' \item{call, formula, terms, model}{Model specification details.}
 #' \item{runtime}{Elapsed runtime in seconds.}
 #' \item{method}{Estimation method}
 #' \item{estimate_sigma}{Logical flag indicating whether the scale parameter
 #'   \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
+#'
+#' Rather than reaching into these components directly, use the extractor
+#' methods documented in \code{\link{bqr.svy.methods}} — \code{coef},
+#' \code{fitted} and \code{confint} — together with \code{\link{diagnostics}},
+#' all of which select quantiles numerically through a \code{tau} argument.
 #'
 #' @references
 #' Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2024).
@@ -366,60 +378,46 @@ bqr.svy <- function(formula,
       stringsAsFactors = FALSE,
       check.names      = FALSE
     )
-    class(out) <- c("bqr_diagnosis", "data.frame")
+    class(out) <- c("bqr.svy.diagnostics", "data.frame")
     out
   }
 
   # --- Output ---
-  if (length(taus) == 1L) {
-    diagnosis <- compute_diagnosis(fits[[1]]$draws)
+  # The object has a single shape regardless of how many quantiles were fitted:
+  # one list entry per tau for the draws and the diagnostics, and one column per
+  # tau for the coefficients. A single quantile is simply the n_tau == 1 case,
+  # which is what lets one set of methods serve every fit.
+  beta_mat <- do.call(cbind, lapply(fits, `[[`, "beta"))
+  colnames(beta_mat) <- names(fits)
 
-    out <- list(
-      beta           = fits[[1]]$beta,
-      draws          = fits[[1]]$draws,
-      diagnosis      = diagnosis,
-      accept_rate    = fits[[1]]$accept_rate,
-      warmup         = burnin,
-      thin           = thin,
-      runtime        = runtime,
-      method         = method,
-      quantile       = taus,
-      prior          = pri,
-      terms          = mt,
-      model          = mf,
-      formula        = formula,
-      estimate_sigma = estimate_sigma
-    )
-    out$call$formula <- formula
-    class(out) <- c("bwqr_fit", "bqr.svy")
-    return(out)
-  } else {
-    beta_mat   <- do.call(cbind, lapply(fits, `[[`, "beta"))
-    colnames(beta_mat) <- names(fits)
-    draws_list <- lapply(fits, `[[`, "draws")
-    acc_vec    <- vapply(fits, `[[`, numeric(1), "accept_rate")
-    names(acc_vec) <- names(fits)
+  draws_list <- lapply(fits, `[[`, "draws")
 
-    diagnosis <- lapply(draws_list, compute_diagnosis)
-    names(diagnosis) <- names(fits)
+  acc_vec <- vapply(fits, `[[`, numeric(1), "accept_rate")
+  names(acc_vec) <- names(fits)
 
-    out <- list(
-      beta           = beta_mat,
-      draws          = draws_list,
-      diagnosis      = diagnosis,
-      accept_rate    = acc_vec,
-      warmup         = burnin,
-      thin           = thin,
-      runtime        = runtime,
-      method         = method,
-      quantile       = taus,
-      prior          = pri,
-      terms          = mt,
-      model          = mf,
-      formula        = formula,
-      estimate_sigma = estimate_sigma
-    )
-    class(out) <- c("bwqr_fit_multi", "bqr.svy")
-    return(out)
-  }
+  diagnosis <- lapply(draws_list, compute_diagnosis)
+  names(diagnosis) <- names(fits)
+
+  out <- list(
+    call           = cl,
+    formula        = formula,
+    terms          = mt,
+    model          = mf,
+    quantile       = taus,
+    method         = method,
+    beta           = beta_mat,
+    draws          = draws_list,
+    diagnosis      = diagnosis,
+    accept_rate    = acc_vec,
+    weights        = w,
+    n              = length(y),
+    niter          = niter,
+    warmup         = burnin,
+    thin           = thin,
+    runtime        = runtime,
+    prior          = pri,
+    estimate_sigma = estimate_sigma
+  )
+  class(out) <- "bqr.svy"
+  out
 }

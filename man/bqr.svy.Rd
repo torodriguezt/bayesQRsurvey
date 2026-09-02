@@ -51,18 +51,30 @@ If \code{NULL} (default), \eqn{\pi_i = 1/w_i} and only the first term of \eqn{\t
 is used, yielding a biased estimator (a warning is issued).}
 }
 \value{
-An object of class \code{"bqr.svy"}, containing:
-\item{beta}{Posterior mean estimates of regression coefficients.}
-\item{draws}{Posterior draws from the MCMC sampler.}
-\item{accept_rate}{Average acceptance rate (if available).}
-\item{warmup, thin}{MCMC control parameters used during sampling.}
+An object of class \code{"bqr.svy"}. Its shape does not depend on how
+many quantiles were fitted: quantile-specific components always hold one entry
+per quantile, named \code{"tau=0.500"} and so on, and a single quantile is
+simply the one-entry case. The components are:
+\item{beta}{Matrix of posterior mean estimates of the regression coefficients,
+with one row per coefficient and one column per quantile.}
+\item{draws}{Named list of posterior draw matrices, one per quantile.}
+\item{diagnosis}{Named list of convergence diagnostics, one per quantile.}
+\item{accept_rate}{Named vector of average acceptance rates, one per quantile
+(\code{NA} for \code{method = "ald"}, which uses Gibbs sampling).}
 \item{quantile}{The quantile(s) fitted.}
+\item{weights, n}{The survey weights supplied and the number of observations.}
+\item{warmup, thin, niter}{MCMC control parameters used during sampling.}
 \item{prior}{Prior specification used.}
-\item{formula, terms, model}{Model specification details.}
+\item{call, formula, terms, model}{Model specification details.}
 \item{runtime}{Elapsed runtime in seconds.}
 \item{method}{Estimation method}
 \item{estimate_sigma}{Logical flag indicating whether the scale parameter
 \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
+
+Rather than reaching into these components directly, use the extractor
+methods documented in \code{\link{bqr.svy.methods}} — \code{coef},
+\code{fitted} and \code{confint} — together with \code{\link{diagnostics}},
+all of which select quantiles numerically through a \code{tau} argument.
 }
 \description{
 \code{bqr.svy} implements Bayesian methods for estimating quantile regression models
@@ -75,9 +87,9 @@ The bqr.svy function can estimate three types of models, where the quantile regr
 coefficients are defined at the super-population level, and their estimators are built upon
 the survey weights.
 \itemize{
-\item \code{"ald"} – The asymmetric Laplace distribution as working likelihood.
-\item \code{"score"} – A score based likelihood function.
-\item \code{"approximate"} – A pseudolikelihood function based on a Gaussian approximation.
+\item \code{"ald"} - The asymmetric Laplace distribution as working likelihood.
+\item \code{"score"} - A score based likelihood function.
+\item \code{"approximate"} - A pseudolikelihood function based on a Gaussian approximation.
 }
 }
 \examples{
@@ -121,6 +133,6 @@ fit_approx <- bqr.svy(y ~ x1 + x2, weights = w, data = data, method = "approxima
 \references{
 Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2024).
 Bayesian Quantile Regression Models for Complex Survey Data Under Informative Sampling.
-\emph{Journal of Survey Statistics and Methodology}, 12(4), 1105–1130.
+\emph{Journal of Survey Statistics and Methodology}, 12(4), 1105-1130.
 \doi{10.1093/jssam/smae015}
 }
