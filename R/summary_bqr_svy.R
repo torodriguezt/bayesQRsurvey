@@ -12,56 +12,25 @@ NULL
   a
 }
 
-# Internal: posterior summaries with consistent columns
-summarise_draws_custom <- function(draws, probs = c(0.025, 0.975), ...) {
-  if (!is.matrix(draws)) draws <- as.matrix(draws)
-  if (is.null(colnames(draws))) colnames(draws) <- paste0("V", seq_len(ncol(draws)))
-
-  s <- posterior::summarize_draws(
-    draws,
-    "mean", "median", "sd",
-    "rhat", "ess_bulk", "ess_tail",
-    ~posterior::quantile2(.x, probs = probs)
-  )
-
-  # Add lower/upper_ci when exactly two probs are provided
-  if (length(probs) == 2) {
-    if (all(c("q2.5", "q97.5") %in% names(s))) {
-      s$lower_ci <- s$`q2.5`
-      s$upper_ci <- s$`q97.5`
-    } else {
-      qcols <- grep("^q[0-9]", names(s), value = TRUE)
-      if (length(qcols) >= 2) {
-        qnum <- suppressWarnings(as.numeric(sub("^q", "", sub("\\.#", ".", qcols))))
-        ord <- order(qnum)
-        s$lower_ci <- s[[qcols[ord[1]]]]
-        s$upper_ci <- s[[qcols[ord[length(ord)]]]]
-      }
-    }
-  }
-
-  wanted <- c("variable","mean","median","sd","rhat","ess_bulk","ess_tail",
-              "q2.5","q97.5","lower_ci","upper_ci")
-  s[, intersect(wanted, names(s)), drop = FALSE]
-}
-
-
 # ======================================================================
-# ANCHOR: SUMMARY (single help page "summary.bayesQRsurvey")
+# ANCHOR: SUMMARY (single help page "summary.bqr.svy")
 # ======================================================================
 
-#' Summary methods for bayesQRsurvey
-#'@description
-#' summary.bayesQRsurvey is an S3 method that summarizes the output of the
-#' \code{bqr.svy} or \code{mo.bqr.svy} function. For the \code{bqr.svy} the posterior mean,
-#' posterior credible interval and convergence diagnostics are calculated. For the \code{mo.bqr.svy}
-#' the iterations for convergence, the MAP and the direction are calculated.
-#' @name summary.bayesQRsurvey
-#' @docType methods
+#' Summarize a fitted survey quantile regression
+#'
+#' @description
+#' Summary methods for the objects returned by \code{\link{bqr.svy}} and
+#' \code{\link{mo.bqr.svy}}. For a \code{"bqr.svy"} fit the posterior mean,
+#' the posterior credible interval and the convergence diagnostics are reported
+#' for every quantile. For a \code{"mo.bqr.svy"} fit, which is estimated by EM,
+#' the posterior mode, the scale parameter and the number of iterations are
+#' reported for every quantile and direction.
+#' @name summary.bqr.svy
+#' @seealso \code{\link{bqr.svy.methods}}, \code{\link{diagnostics}}
 NULL
 
 
-#' @rdname summary.bayesQRsurvey
+#' @rdname summary.bqr.svy
 #' @title Summary of \code{bqr.svy} fits
 #' @param object An object of class \code{bqr.svy}.
 #' @param probs Two-element numeric vector with credible interval probabilities.
@@ -138,14 +107,9 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
     )
   }
 
-  tau_labels <- paste0("tau=", formatC(object$quantile, format = "f", digits = 3))
-  if (is.list(object$draws)) {
-    per_tau <- Map(make_block, object$draws, object$quantile, tau_labels)
-    names(per_tau) <- tau_labels
-  } else {
-    per_tau <- list(make_block(object$draws, object$quantile, tau_labels[1]))
-    names(per_tau) <- tau_labels
-  }
+  tau_labels <- .tau_labels(object)
+  per_tau <- Map(make_block, object$draws, object$quantile, tau_labels)
+  names(per_tau) <- tau_labels
 
   res <- list(
     call      = object$call %||% NULL,
@@ -158,7 +122,7 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
 }
 
 
-#' @rdname summary.bayesQRsurvey
+#' @rdname summary.bqr.svy
 #' @title Summary of \code{mo.bqr.svy} fits
 #' @param object An object of class \code{mo.bqr.svy}.
 #' @param digits Integer; number of decimals used by printing helpers. Default \code{4}.
@@ -287,18 +251,6 @@ print.summary.bqr.svy <- function(x, tau = NULL, ...) {
 # a bqr.svy fit ($diagnosis). Full precision is kept in the object; only the
 # display is standardized: R-hat to `digits` decimals, ESS to whole numbers.
 #' @noRd
-#' @exportS3Method print bqr_diagnosis
-print.bqr_diagnosis <- function(x, digits = 3, ...) {
-  df <- as.data.frame(x)
-  if ("rhat" %in% names(df))
-    df$rhat <- formatC(df$rhat, format = "f", digits = digits)
-  for (nm in intersect(c("ess_bulk", "ess_tail"), names(df)))
-    df[[nm]] <- round(df[[nm]])
-  print.data.frame(df, ...)
-  invisible(x)
-}
-
-#' @noRd
 #' @exportS3Method print summary.mo.bqr.svy
 print.summary.mo.bqr.svy <- function(x, max_dir = 8, coefficients = TRUE, ...) {
   stopifnot(inherits(x, "summary.mo.bqr.svy"))
@@ -375,7 +327,7 @@ print.summary.mo.bqr.svy <- function(x, max_dir = 8, coefficients = TRUE, ...) {
     param_names <- tau_blocks[[1]]$coef_tab$parameter
     coef_mat <- matrix(NA_real_, nrow = length(param_names), ncol = n_dir)
     rownames(coef_mat) <- param_names
-    colnames(coef_mat) <- paste0("dir", vapply(tau_blocks, function(b) b$dir_id, numeric(1)))
+    colnames(coef_mat) <- paste0("dir_", vapply(tau_blocks, function(b) b$dir_id, numeric(1)))
     for (j in seq_along(tau_blocks))
       coef_mat[, j] <- tau_blocks[[j]]$coef_tab$MAP
 
@@ -420,93 +372,15 @@ print.summary.mo.bqr.svy <- function(x, max_dir = 8, coefficients = TRUE, ...) {
 }
 
 
-# Internal helper: tidy any summary object into a common schema (no bwqr)
-..tidy_bayesQRsurvey_summary <- function(s, target_tau = 0.5) {
-  if (inherits(s, "summary.bqr.svy")) {
-    taus <- vapply(s$per_tau, `[[`, numeric(1), "tau")
-    idx  <- which.min(abs(taus - target_tau))
-    blk  <- s$per_tau[[idx]]
-    df   <- blk$coef_summary
-    if (!is.null(blk$diagnosis)) {
-      df <- merge(df, blk$diagnosis, by = "variable", all.x = TRUE, sort = FALSE)
-    }
-  } else if (inherits(s, "summary.mo.bqr.svy")) {
-    blocks <- s$blocks
-    make_df <- function(b) {
-      data.frame(
-        variable = paste0(
-          b$coef_tab$parameter,
-          " [dir ", b$dir_id, ", tau=", formatC(b$tau, format = "f", digits = 3), "]"
-        ),
-        mean     = b$coef_tab$MAP,
-        sd       = NA_real_,
-        rhat     = NA_real_,
-        ess_bulk = NA_real_,
-        ess_tail = NA_real_,
-        lower_ci = NA_real_,
-        upper_ci = NA_real_,
-        check.names = FALSE
-      )
-    }
-    df <- do.call(rbind, lapply(blocks, make_df))
-  } else {
-    stop("Unknown summary object class: ", paste(class(s), collapse = ", "))
-  }
-
-  wanted <- c("variable","mean","sd","rhat","ess_bulk","ess_tail","lower_ci","upper_ci")
-  miss <- setdiff(wanted, names(df))
-  for (nm in miss) df[[nm]] <- NA_real_
-  df[, wanted, drop = FALSE]
-}
-
-# (Hidden) combine multiple fits into a comparative table
-#' @noRd
-#' @exportS3Method summary list
-summary.list <- function(object, ..., methods = NULL, target_tau = 0.5, digits = 3) {
-  supported <- c("bqr.svy","mo.bqr.svy")
-  is_supported <- function(x) any(inherits(x, supported))
-  if (!length(object) || !all(vapply(object, is_supported, logical(1)))) {
-    return(NextMethod())
-  }
-
-  smry <- lapply(object, function(f) summary(f, ...))
-
-  if (is.null(methods)) {
-    methods <- vapply(object, function(f)
-      (f$method %||% class(f)[1]) %||% "model", character(1))
-  }
-  if (length(methods) != length(smry)) {
-    stop("'methods' must be NULL or have the same length as 'object'.")
-  }
-
-  tidied <- Map(function(s, lab) {
-    df <- ..tidy_bayesQRsurvey_summary(s, target_tau = target_tau)
-    df$Method <- lab
-    df
-  }, smry, methods)
-
-  table <- do.call(rbind, tidied)
-  table <- table[, c("Method", setdiff(names(table), "Method")), drop = FALSE]
-
-  out <- list(
-    table      = table,
-    target_tau = target_tau,
-    components = smry,
-    digits     = digits
-  )
-  class(out) <- "summary.bayesQRsurvey"
-  out
-}
-
-
 # ======================================================================
-# ANCHOR: PRINT (single help page "print.bayesQRsurvey")
+# ANCHOR: PRINT (single help page "print.bqr.svy")
 # ======================================================================
 
-#' Print methods for bayesQRsurvey model objects
+#' Print a fitted survey quantile regression
 #'
 #' @description
-#' \code{print.bayesQRsurvey} is an S3 method that prints the content of an S3 object of class
+#' Print methods for the objects returned by \code{\link{bqr.svy}} and
+#' \code{\link{mo.bqr.svy}}. They print an S3 object of class
 #' \code{bqr.svy} or \code{mo.bqr.svy} to the console.
 #'
 #' @param x An object of class \code{"bqr.svy"} or \code{"mo.bqr.svy"},
@@ -514,7 +388,7 @@ summary.list <- function(object, ..., methods = NULL, target_tau = 0.5, digits =
 #' @param digits Integer specifying the number of decimal places to print. Defaults to \code{3}.
 #' @param ... Additional arguments that are passed to the generic \code{print()} function.
 #'
-#' @name print.bayesQRsurvey
+#' @name print.bqr.svy
 #' @docType methods
 #'
 #' @examples
@@ -545,7 +419,7 @@ summary.list <- function(object, ..., methods = NULL, target_tau = 0.5, digits =
 NULL
 
 
-#' @rdname print.bayesQRsurvey
+#' @rdname print.bqr.svy
 #' @title Print a \code{bqr.svy} model
 #' @exportS3Method print bqr.svy
 print.bqr.svy <- function(x, digits = 3, ...) {
@@ -560,23 +434,14 @@ print.bqr.svy <- function(x, digits = 3, ...) {
   beta_display <- x$beta
   sigma_estimated <- identical(x$method, "ald") && isTRUE(x$estimate_sigma)
   if (sigma_estimated) {
-    sigma_mean <- function(m) {
-      if (is.matrix(m) && "sigma" %in% colnames(m)) mean(m[, "sigma"], na.rm = TRUE)
-      else NA_real_
-    }
-    sig_vec <- if (is.matrix(x$draws) && length(x$quantile) == 1L) {
-      sigma_mean(x$draws)
-    } else if (is.list(x$draws)) {
-      vapply(x$draws, sigma_mean, numeric(1))
-    } else {
-      NA_real_
-    }
-    if (is.matrix(beta_display)) {
-      sigma_row    <- matrix(sig_vec, nrow = 1, dimnames = list("sigma", colnames(beta_display)))
-      beta_display <- rbind(beta_display, sigma_row)
-    } else {
-      beta_display <- c(beta_display, sigma = sig_vec)
-    }
+    sig_vec <- vapply(x$draws, function(m) {
+      m <- as.matrix(m)
+      if ("sigma" %in% colnames(m)) mean(m[, "sigma"], na.rm = TRUE) else NA_real_
+    }, numeric(1))
+    beta_display <- rbind(
+      beta_display,
+      matrix(sig_vec, nrow = 1, dimnames = list("sigma", colnames(beta_display)))
+    )
   }
 
   cat("\nCoefficients (posterior means):\n")
@@ -587,12 +452,15 @@ print.bqr.svy <- function(x, digits = 3, ...) {
   }
 
   # ---- Acceptance rate ----
-  if (!is.null(x$accept_rate)) {
-    if (is.numeric(x$accept_rate) && length(x$accept_rate) == 1L) {
-      cat("\nAcceptance rate:", round(x$accept_rate, 3), "\n")
-    } else if (is.numeric(x$accept_rate) && length(x$accept_rate) > 1L) {
+  # Reported only for the Metropolis-Hastings backends; "ald" uses Gibbs
+  # sampling, so its acceptance rate is NA and printing it would be noise.
+  acc <- x$accept_rate
+  if (is.numeric(acc) && length(acc) && !all(is.na(acc))) {
+    if (length(acc) == 1L) {
+      cat("\nAcceptance rate:", round(acc, 3), "\n")
+    } else {
       cat("\nAcceptance rate by quantile:\n")
-      print(round(x$accept_rate, 3))
+      print(round(acc, 3))
     }
   }
 
@@ -601,29 +469,6 @@ print.bqr.svy <- function(x, digits = 3, ...) {
 
 
 
-#' @keywords internal
-sigma.mo.bqr.svy <- function(x) {
-  if (!inherits(x, "mo.bqr.svy")) stop("Not a 'mo.bqr.svy' object.", call. = FALSE)
-  # prefer top-level x$sigma if present
-  if (is.list(x$sigma) && length(x$sigma) == length(x$quantile)) return(x$sigma)
-  # fallback: build from nested structure
-  out <- vector("list", length(x$fit))
-  names(out) <- paste0("tau=", formatC(x$quantile, digits = 3, format = "f"))
-  for (qi in seq_along(x$fit)) {
-    block <- x$fit[[qi]]
-    if (!is.list(block$directions)) next
-    vals <- vapply(block$directions, function(dk) {
-      v <- tryCatch(as.numeric(dk$sigma)[1], error = function(e) NA_real_)
-      ifelse(is.finite(v), v, NA_real_)
-    }, numeric(1))
-    names(vals) <- paste0("dir", seq_along(vals))
-    out[[qi]] <- vals
-  }
-  out
-}
-
-#' @rdname print.bayesQRsurvey
-#' @title Print a \code{mo.bqr.svy} model
 #' @exportS3Method print mo.bqr.svy
 print.mo.bqr.svy <- function(x, ...) {
   rule <- strrep("-", 56)
@@ -666,7 +511,7 @@ print.mo.bqr.svy <- function(x, ...) {
   param_names <- rownames(M)
   if (is.null(param_names)) param_names <- paste0("V", seq_len(n_param))
   dir_names <- colnames(M)
-  if (is.null(dir_names)) dir_names <- paste0("dir", seq_len(n_dir))
+  if (is.null(dir_names)) dir_names <- paste0("dir_", seq_len(n_dir))
 
   # Transpose: directions as rows, parameters as columns
   Mt <- t(round(M, digits))
