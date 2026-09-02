@@ -17,8 +17,7 @@ Rplots.pdf
 # knitr::spin() byproduct (the plots are embedded in code.html)
 figure/
 
-# Generated for the JSS submission; rebuild with knitr::spin("code.R")
-code.html
+# The JSS submission bundle is built into JSS-submission/ (see below)
 
 # Vignettes are rendered by R CMD build; only the .Rmd is versioned
 vignettes/*.html
@@ -39,3 +38,6 @@ reproduce_*.R
 articulo.r
 simulation_aux_functions.r
 MCMC_BWQR_*.R
+
+# JSS submission bundle (rebuilt on demand)
+JSS-submission/
