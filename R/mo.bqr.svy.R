@@ -68,7 +68,7 @@ if (!exists("%||%"))
 #  MODEL FITTER (multiple-output/multivariate)
 # =====================================================
 
-#' Multiple-Output Bayesian quantile regression for complex survey data
+#' Multiple-output Bayesian quantile regression for complex survey data
 #'
 #' mo.bqr.svy implements a Bayesian approach to multiple-output quantile regression
 #' for complex survey data analysis. The method builds a quantile region based on
@@ -106,14 +106,21 @@ if (!exists("%||%"))
 #'                If \code{estimate_sigma = FALSE}, all entries are fixed at 1.
 #'                If \code{estimate_sigma = TRUE}, each entry contains the
 #'                estimated value of \eqn{\sigma} (posterior mode from EM).}
+#'   \item{algorithm, tolerance, max_iter}{EM settings used during estimation}
 #'   \item{n_dir}{Number of directions}
 #'   \item{U}{Matrix of projection directions (\eqn{d \times K})}
 #'   \item{Gamma_list}{List of orthogonal complement bases, one per direction}
+#'   \item{model}{The model frame}
+#'   \item{weights}{The survey weights supplied}
 #'   \item{n_obs}{Number of observations}
 #'   \item{n_vars}{Number of covariates}
 #'   \item{response_dim}{Dimension of the response \eqn{d}}
 #'   \item{estimate_sigma}{Logical flag indicating whether the scale parameter
 #'                         \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
+#'
+#' Use \code{\link{diagnostics}} to inspect EM convergence rather than reaching
+#' into \code{fit}. Note that estimation is by EM, so a fit stores posterior
+#' modes and carries no quantification of posterior uncertainty.
 #'
 #' @references
 #' Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2024).
@@ -229,6 +236,7 @@ mo.bqr.svy <- function(formula,
   }
   if (length(wts) != n)  stop("'weights' must have length n.")
   if (any(!is.finite(wts)) || any(wts <= 0)) stop("Invalid weights.")
+  wts_raw <- wts          # kept for weights(); the EM uses the normalized ones
   wts <- wts / mean(wts)
 
   if (!requireNamespace("pracma", quietly = TRUE)) {
@@ -479,7 +487,7 @@ mo.bqr.svy <- function(formula,
     all_rows <- unique(unlist(lapply(dir_list, function(dd) names(dd$beta))))
     mat <- matrix(NA_real_, nrow = length(all_rows), ncol = length(dir_list))
     rownames(mat) <- all_rows
-    colnames(mat) <- paste0("dir", seq_along(dir_list))
+    colnames(mat) <- paste0("dir_", seq_along(dir_list))
     for (k in seq_along(dir_list)) {
       b <- dir_list[[k]]$beta
       mat[names(b), k] <- b
@@ -496,7 +504,7 @@ mo.bqr.svy <- function(formula,
       v <- tryCatch(as.numeric(dd$sigma)[1], error = function(e) NA_real_)
       ifelse(is.finite(v), v, NA_real_)
     }, numeric(1))
-    names(vals) <- paste0("dir", seq_along(dir_list))
+    names(vals) <- paste0("dir_", seq_along(dir_list))
     sigma_list[[qi]] <- vals
   }
 
@@ -504,14 +512,19 @@ mo.bqr.svy <- function(formula,
     call            = match.call(),
     formula         = formula,
     terms           = attr(mf, "terms"),
+    model           = mf,
     quantile        = quantile,
     prior           = pri,
     fit             = results,
     coefficients    = coefficients_list,
     sigma           = sigma_list,
+    algorithm       = algorithm,
+    tolerance       = epsilon,
+    max_iter        = max_iter,
     n_dir           = K,
     U               = U,
     Gamma_list      = Gamma_list,
+    weights         = wts_raw,
     n_obs           = n,
     n_vars          = p,
     response_dim    = d,

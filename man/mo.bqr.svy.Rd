@@ -2,7 +2,7 @@
 % Please edit documentation in R/mo.bqr.svy.R
 \name{mo.bqr.svy}
 \alias{mo.bqr.svy}
-\title{Multiple-Output Bayesian quantile regression for complex survey data}
+\title{Multiple-output Bayesian quantile regression for complex survey data}
 \usage{
 mo.bqr.svy(
   formula,
@@ -65,14 +65,21 @@ An object of class \code{"mo.bqr.svy"} containing:
 If \code{estimate_sigma = FALSE}, all entries are fixed at 1.
 If \code{estimate_sigma = TRUE}, each entry contains the
 estimated value of \eqn{\sigma} (posterior mode from EM).}
+\item{algorithm, tolerance, max_iter}{EM settings used during estimation}
 \item{n_dir}{Number of directions}
 \item{U}{Matrix of projection directions (\eqn{d \times K})}
 \item{Gamma_list}{List of orthogonal complement bases, one per direction}
+\item{model}{The model frame}
+\item{weights}{The survey weights supplied}
 \item{n_obs}{Number of observations}
 \item{n_vars}{Number of covariates}
 \item{response_dim}{Dimension of the response \eqn{d}}
 \item{estimate_sigma}{Logical flag indicating whether the scale parameter
 \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
+
+Use \code{\link{diagnostics}} to inspect EM convergence rather than reaching
+into \code{fit}. Note that estimation is by EM, so a fit stores posterior
+modes and carries no quantification of posterior uncertainty.
 }
 \description{
 mo.bqr.svy implements a Bayesian approach to multiple-output quantile regression
@@ -131,6 +138,6 @@ fit2 <- mo.bqr.svy(
 \references{
 Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2024).
 Bayesian Quantile Regression Models for Complex Survey Data Under Informative Sampling.
-\emph{Journal of Survey Statistics and Methodology}, 12(4), 1105–1130.
+\emph{Journal of Survey Statistics and Methodology}, 12(4), 1105-1130.
 \doi{10.1093/jssam/smae015}
 }
