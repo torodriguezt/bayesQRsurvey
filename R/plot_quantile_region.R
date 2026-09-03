@@ -39,7 +39,7 @@
 
 # ---- main function ---------------------------------------------------
 
-#' Plot Bivariate Quantile Regions for Multiple-Output Models
+#' Plot bivariate quantile regions for multiple-output models
 #'
 #' @description
 #' Draws bivariate quantile regions from a fitted \code{mo.bqr.svy} object.

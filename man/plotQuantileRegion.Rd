@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_quantile_region.R
 \name{plotQuantileRegion}
 \alias{plotQuantileRegion}
-\title{Plot Bivariate Quantile Regions for Multiple-Output Models}
+\title{Plot bivariate quantile regions for multiple-output models}
 \usage{
 plotQuantileRegion(
   model,
