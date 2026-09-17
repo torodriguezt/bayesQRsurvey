@@ -39,21 +39,27 @@
 
 # ---- main function ---------------------------------------------------
 
-#' Plot bivariate quantile regions for multiple-output models
+#' Plot method for multiple-output Bayesian quantile regression fits
 #'
 #' @description
-#' Draws bivariate quantile regions from a fitted \code{mo.bqr.svy} object.
-#' The function projects data onto a grid, determines which points lie inside
-#' each quantile region, and visualises the result using \pkg{ggplot2}.
+#' Draws bivariate quantile regions from a fitted \code{mo.bqr.svy} object. The
+#' method projects the data onto a grid, determines which points lie inside each
+#' quantile region, and visualises the result using \pkg{ggplot2}.
+#'
+#' The response names and the data are taken from the fitted object, so neither
+#' has to be supplied again; \code{response} and \code{datafile} are only needed
+#' to override them. A quantile region is conditional on the covariates, so
+#' \code{xValue} must give the covariate profile at which to draw it, one value
+#' per design-matrix column.
 #'
 #' @details
-#' Two display modes are available:
+#' Two display modes are available.
 #' \itemize{
-#'    \item \code{paintedArea = TRUE} (default): Filled regions with contour
-#'          outlines, one per quantile magnitude, drawn from the outermost
+#'    \item \code{paintedArea = TRUE} (default) draws filled regions with
+#'          contour outlines, one per quantile magnitude, from the outermost
 #'          (smallest \eqn{\tau}) to the innermost.
-#'    \item \code{paintedArea = FALSE}: Contour-only lines, distinguished by
-#'          colour and linetype.
+#'    \item \code{paintedArea = FALSE} draws contour lines only, distinguished
+#'          by colour and linetype.
 #' }
 #' In both modes the quantile levels are identified through a standard
 #' \pkg{ggplot2} legend (labelled \eqn{\tau} = level), so its position and
@@ -65,16 +71,18 @@
 #' half-space constraints defined by the fitted directions and orthogonal
 #' bases.
 #'
-#' @param model An object of class \code{"mo.bqr.svy"} produced by
+#' @param x An object of class \code{"mo.bqr.svy"} produced by
 #'    \code{\link{mo.bqr.svy}}.
-#' @param response Character vector of length 2 giving the names of the
-#'    response columns in \code{datafile}.
-#' @param datafile A data frame containing at least the two columns named
-#'    in \code{response}.
+#' @param y Ignored (S3 signature).
+#' @param response Optional character vector of length 2 giving the names of the
+#'    response columns to draw. Defaults to the responses used to fit the model.
+#' @param datafile Optional data frame containing at least the two columns named
+#'    in \code{response}. Defaults to the data stored in the fit.
 #' @param ngridpoints Integer; number of grid points per axis
 #'    (default = 200).
-#' @param xValue Numeric vector of covariate values at which to evaluate
-#'    the regression.  For an intercept-only model use \code{xValue = 1}.
+#' @param xValue Numeric vector of covariate values at which to evaluate the
+#'    regression, one per design-matrix column and in that order. For an
+#'    intercept-only model use \code{xValue = 1} (the default).
 #' @param paintedArea Logical; if \code{TRUE} (default) the regions are
 #'    drawn as filled ribbons (see Details).
 #' @param range_y An optional \eqn{2 \times 2} matrix whose rows give
@@ -96,8 +104,9 @@
 #'    (default = 0.8).
 #' @param verbose Logical; if \code{TRUE}, print per-quantile progress
 #'    messages (default = \code{FALSE}).
+#' @param ... Accepted for compatibility with the generic; ignored.
 #'
-#' @return Invisibly, a list with components:
+#' @return Invisibly, a list with the components listed below.
 #'    \item{plot}{A \code{ggplot} object.}
 #'    \item{data}{A data frame with columns \code{y1}, \code{min},
 #'      \code{max} and \code{tau}, one block per quantile level.}
@@ -126,23 +135,29 @@
 #' )
 #'
 #' # --- Plot quantile regions (filled ribbons) ---
-#' plotQuantileRegion(fit, response = c("wgt", "hgt"), datafile = Anthro)
+#' # the responses and the data come from the fit; the model is intercept-only,
+#' # so the default xValue = 1 is the right covariate profile
+#' plot(fit)
 #'
 #' # Contour-only style
-#' plotQuantileRegion(fit, response = c("wgt", "hgt"), datafile = Anthro,
-#'                    paintedArea = FALSE)
+#' plot(fit, paintedArea = FALSE)
 #' }
 #'
-#' @seealso \code{\link{mo.bqr.svy}}, \code{\link{prior}}
+#' @seealso \code{\link{mo.bqr.svy}}, \code{\link{mo.bqr.svy.methods}},
+#'    \code{\link{prior}}
+#' @importFrom stats model.response
+#' @importFrom utils head
 #' @importFrom ggplot2 ggplot aes geom_point geom_ribbon geom_path
 #'    scale_color_manual scale_linetype_discrete
 #'    theme theme_minimal
 #'    labs annotate element_text element_blank element_rect element_line
 #'    margin unit
+#' @method plot mo.bqr.svy
 #' @export
-plotQuantileRegion <- function(model,
-                               response,
-                               datafile,
+plot.mo.bqr.svy <- function(x,
+                               y             = NULL,
+                               response      = NULL,
+                               datafile      = NULL,
                                ngridpoints   = 200,
                                xValue        = 1,
                                paintedArea   = TRUE,
@@ -153,14 +168,38 @@ plotQuantileRegion <- function(model,
                                point_alpha   = 0.3,
                                point_size    = 1.2,
                                line_size     = 0.8,
-                               verbose       = FALSE) {
+                               verbose       = FALSE,
+                               ...) {
 
   color_palette <- match.arg(color_palette)
   theme_style   <- match.arg(theme_style)
+  model <- x
+
+  # --- Defaults taken from the fit ------------------------------------
+  # The fitted object carries the model frame, so neither the response names nor
+  # the data have to be supplied again.
+  Y <- as.matrix(stats::model.response(model$model))
+  if (is.null(colnames(Y)))
+    colnames(Y) <- paste0("y", seq_len(ncol(Y)))
+  if (is.null(response)) {
+    if (ncol(Y) != 2L)
+      stop("Quantile regions are drawn for a bivariate response; this fit has ",
+           ncol(Y), ". Supply 'response' to choose two of them.", call. = FALSE)
+    response <- colnames(Y)
+  }
+  if (is.null(datafile))
+    datafile <- as.data.frame(Y, stringsAsFactors = FALSE)
 
   # --- Validate inputs ------------------------------------------------
-  if (!inherits(model, "mo.bqr.svy"))
-    stop("'model' must be of class 'mo.bqr.svy'.", call. = FALSE)
+  # A quantile region is conditional on the covariates, so xValue must give one
+  # value per design-matrix column. Without this check a mismatched length
+  # silently yields an empty region and no plot.
+  if (!is.numeric(xValue) || length(xValue) != model$n_vars) {
+    nms <- utils::head(rownames(model$coefficients[[1L]]), model$n_vars)
+    stop("'xValue' must give one value per covariate: ", model$n_vars,
+         " expected (", paste(nms, collapse = ", "), "), ",
+         length(xValue), " supplied.", call. = FALSE)
+  }
   if (!is.character(response) || length(response) != 2L)
     stop("'response' must be a character vector of length 2.", call. = FALSE)
   if (!is.data.frame(datafile))

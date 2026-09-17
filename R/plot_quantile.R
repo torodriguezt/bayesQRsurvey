@@ -6,24 +6,24 @@
 #' MCMC trace plots, and posterior densities.
 #'
 #' @details
-#' Supported plot types:
+#' The \code{type} argument selects one of four displays.
 #' \itemize{
-#'   \item \code{type = "fit"}: Fitted quantile curves versus a single
+#'   \item \code{type = "fit"} draws the fitted quantile curves versus a single
 #'         numeric predictor (selected via \code{which}). Optionally overlay
 #'         observed points and credible bands. Other covariates can be held
 #'         fixed via \code{at}.
-#'   \item \code{type = "quantile"}: A single coefficient as a function
+#'   \item \code{type = "quantile"} draws a single coefficient as a function
 #'         of the quantile \eqn{\tau}. Optionally add a reference line at 0 and
 #'         the corresponding OLS estimate.
-#'   \item \code{type = "trace"}: MCMC trace(s) at a chosen \eqn{\tau}. One or
-#'         several coefficients may be selected via \code{which}; when more
+#'   \item \code{type = "trace"} draws MCMC traces at a chosen \eqn{\tau}. One
+#'         or several coefficients may be selected via \code{which}; when more
 #'         than one is shown the panels are arranged with \code{facet_wrap}.
-#'   \item \code{type = "density"}: Posterior density(ies) at a chosen
+#'   \item \code{type = "density"} draws posterior densities at a chosen
 #'         \eqn{\tau}, faceted over the selected coefficients as for
 #'         \code{type = "trace"}.
 #' }
 #'
-#' Notes:
+#' Additional details on the arguments.
 #' \itemize{
 #'   \item \code{tau} must be included in \code{x$quantile}. If \code{NULL}, all
 #'         available quantiles in the object are used.
@@ -57,8 +57,8 @@
 #'   default) all coefficients are shown, and when more than one is selected the
 #'   panels are arranged with \code{facet_wrap}.
 #' @param add_points (fit) Logical; overlay observed data points.
-#' @param combine (fit) Logical; if multiple \code{tau}: \code{TRUE} overlays
-#'   curves in one panel; \code{FALSE} uses one panel per quantile.
+#' @param combine (fit) Logical; with several \code{tau}, \code{TRUE} overlays
+#'   the curves in one panel and \code{FALSE} uses one panel per quantile.
 #' @param show_ci (fit) Logical; draw credible bands.
 #' @param ci_probs Length-2 numeric vector with the lower/upper probabilities of
 #'   the credible interval shown by the fit ribbon, the density plot bounds, and
@@ -222,7 +222,7 @@ plot.bqr.svy <- function(
   if (identical(color_palette, "grey")) {
     accent_col   <- "grey20"   # near-black for lines/points and density borders
     accent_fill  <- "grey70"   # light grey for ribbons/density fills
-    ref_col      <- "black"    # reference lines (median, OLS): black + dashed/dotted
+    ref_col      <- "black"    # reference lines (posterior mean, OLS): black + dashed/dotted
   } else {
     accent_col   <- "#2171B5"   # strong blue
     accent_fill  <- "#6BAED6"   # lighter blue
@@ -289,11 +289,13 @@ plot.bqr.svy <- function(
         preds <- Xg %*% t(Dk)
 
         xg <- newdata[[predictor]]
-        qmed <- apply(preds, 1, stats::median)
+        # the curve is the conditional quantile at the posterior mean, x' beta_bar,
+        # so it is exactly what fitted() and predict() return over this grid
+        qfit <- drop(Xg %*% colMeans(Dk))
 
         df <- data.frame(
           x = xg,
-          y = qmed,
+          y = qfit,
           tau = format(ti, trim = TRUE),
           tau_numeric = ti
         )
@@ -396,7 +398,8 @@ plot.bqr.svy <- function(
       }
     }
 
-    # Summary by quantile for each coefficient
+    # Summary by quantile for each coefficient: the posterior mean, which is
+    # what coef() and summary() report, with a credible band from the draws
     qsum_list <- lapply(seq_along(which_idx), function(w) {
       idx <- which_idx[w]
       coef_name <- which_names[w]
@@ -404,7 +407,7 @@ plot.bqr.svy <- function(
         Dk <- .get_draws(x, tau_sel = ti)[, idx]
         data.frame(
           tau = ti,
-          med = stats::median(Dk),
+          est = mean(Dk),
           lo  = unname(stats::quantile(Dk, probs = ci_probs[1])),
           hi  = unname(stats::quantile(Dk, probs = ci_probs[2])),
           coef = coef_name,
@@ -433,7 +436,7 @@ plot.bqr.svy <- function(
 
     # ggplot2 plot
     if (use_ggplot && requireNamespace("ggplot2", quietly = TRUE)) {
-      p <- ggplot2::ggplot(qsum, ggplot2::aes(x = .data$tau, y = .data$med))
+      p <- ggplot2::ggplot(qsum, ggplot2::aes(x = .data$tau, y = .data$est))
 
       # Always show the credible band for quantile plots
       p <- p + ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lo, ymax = .data$hi),
@@ -481,8 +484,8 @@ plot.bqr.svy <- function(
       idx <- which_idx[1]
       coef_name <- which_names[1]
       ols_coef <- if (!is.null(ols_df) && nrow(ols_df) > 0L) ols_df$ols[1] else NA_real_
-      ylim <- range(qsum$lo, qsum$hi, qsum$med, if (add_h0) 0 else NA_real_, na.rm = TRUE)
-      graphics::plot(qsum$tau, qsum$med, type = "n",
+      ylim <- range(qsum$lo, qsum$hi, qsum$est, if (add_h0) 0 else NA_real_, na.rm = TRUE)
+      graphics::plot(qsum$tau, qsum$est, type = "n",
                      xlab = "Quantile", ylab = coef_name,
                      main = if (is.null(main)) sprintf("Coefficient across quantiles: %s", coef_name) else main,
                      ylim = ylim)
@@ -492,8 +495,8 @@ plot.bqr.svy <- function(
         yy <- c(qsum$lo,  rev(qsum$hi))
         graphics::polygon(xx, yy, col = grDevices::adjustcolor("gray50", 0.3), border = NA)
       }
-      graphics::lines(qsum$tau, qsum$med, lwd = line_size)
-      graphics::points(qsum$tau, qsum$med, pch = 19)
+      graphics::lines(qsum$tau, qsum$est, lwd = line_size)
+      graphics::points(qsum$tau, qsum$est, pch = 19)
       if (isTRUE(add_h0))  graphics::abline(h = 0, lty = 1)
       if (isTRUE(add_ols) && is.finite(ols_coef)) graphics::abline(h = ols_coef, lty = 3)
       invisible(NULL)
@@ -515,14 +518,15 @@ plot.bqr.svy <- function(
         data.frame(iteration = seq_len(nrow(D)), value = D[, idx[j]],
                    coef = nms[j], stringsAsFactors = FALSE)))
       trace_data$coef <- factor(trace_data$coef, levels = nms)
-      med_data <- data.frame(coef = factor(nms, levels = nms),
-                             med  = apply(D[, idx, drop = FALSE], 2, stats::median))
+      # reference line at the posterior mean, the estimate coef() reports
+      est_data <- data.frame(coef = factor(nms, levels = nms),
+                             est  = colMeans(D[, idx, drop = FALSE]))
 
       p <- ggplot2::ggplot(trace_data,
                            ggplot2::aes(x = .data$iteration, y = .data$value))
       p <- p + ggplot2::geom_line(color = accent_col, linewidth = 0.3, alpha = 0.7)
-      p <- p + ggplot2::geom_hline(data = med_data,
-                                   ggplot2::aes(yintercept = .data$med),
+      p <- p + ggplot2::geom_hline(data = est_data,
+                                   ggplot2::aes(yintercept = .data$est),
                                    color = ref_col, linetype = "dashed",
                                    linewidth = 0.8)
       if (length(idx) > 1L)
@@ -553,8 +557,9 @@ plot.bqr.svy <- function(
       dens_data <- do.call(rbind, lapply(seq_along(idx), function(j)
         data.frame(x = D[, idx[j]], coef = nms[j], stringsAsFactors = FALSE)))
       dens_data$coef <- factor(dens_data$coef, levels = nms)
-      med_data <- data.frame(coef = factor(nms, levels = nms),
-                             med  = apply(D[, idx, drop = FALSE], 2, stats::median))
+      # reference line at the posterior mean, the estimate coef() reports
+      est_data <- data.frame(coef = factor(nms, levels = nms),
+                             est  = colMeans(D[, idx, drop = FALSE]))
       ci_data <- do.call(rbind, lapply(seq_along(idx), function(j)
         data.frame(coef = nms[j],
                    xint = as.numeric(stats::quantile(D[, idx[j]], probs = ci_probs)),
@@ -564,8 +569,8 @@ plot.bqr.svy <- function(
       p <- ggplot2::ggplot(dens_data, ggplot2::aes(x = .data$x))
       p <- p + ggplot2::geom_density(fill = accent_fill, color = accent_col,
                                      alpha = 0.6, linewidth = 0.7)
-      p <- p + ggplot2::geom_vline(data = med_data,
-                                   ggplot2::aes(xintercept = .data$med),
+      p <- p + ggplot2::geom_vline(data = est_data,
+                                   ggplot2::aes(xintercept = .data$est),
                                    color = ref_col, linetype = "dashed",
                                    linewidth = 0.8)
       p <- p + ggplot2::geom_vline(data = ci_data,
@@ -616,7 +621,7 @@ plot.bqr.svy <- function(
   xg <- newdata[[predictor]]
 
   if (length(tau) == 1L || isTRUE(combine)) {
-    graphics::plot(xg, apply(preds_list[[1]], 1, stats::median), type = "n",
+    graphics::plot(xg, rowMeans(preds_list[[1]]), type = "n",
                    xlab = predictor, ylab = resp,
                    main = if (is.null(main)) {
                      if (length(tau) == 1L) sprintf("Quantile fit vs %s (tau=%.3f)", predictor, tau[1])
@@ -639,8 +644,9 @@ plot.bqr.svy <- function(
 
     for (k in seq_along(tau)) {
       preds_k <- preds_list[[k]]
-      y_med <- apply(preds_k, 1, stats::median)
-      graphics::lines(xg, y_med, col = cols[k], lwd = line_size)
+      # x' beta_bar, the same curve fitted() and predict() return
+      y_fit <- rowMeans(preds_k)
+      graphics::lines(xg, y_fit, col = cols[k], lwd = line_size)
     }
 
     if (isTRUE(add_points)) {
@@ -663,9 +669,9 @@ plot.bqr.svy <- function(
     for (k in seq_along(tau)) {
       ti <- tau[k]
       preds_k <- preds_list[[k]]
-      y_med <- apply(preds_k, 1, stats::median)
+      y_fit <- rowMeans(preds_k)
 
-      graphics::plot(xg, y_med, type = "l", col = cols[k], lwd = line_size,
+      graphics::plot(xg, y_fit, type = "l", col = cols[k], lwd = line_size,
                      xlab = predictor, ylab = resp,
                      main = sprintf("tau = %.3f", ti))
       graphics::grid()
@@ -701,7 +707,7 @@ plot.bqr.svy <- function(
     graphics::plot(v, type = "l", col = "steelblue",
                    main = if (is.null(main)) sprintf("MCMC trace: %s (tau=%.3f)", nm, tau[1]) else main,
                    xlab = "Iteration", ylab = nm)
-    graphics::abline(h = stats::median(v), col = "red", lty = 2)
+    graphics::abline(h = mean(v), col = "red", lty = 2)
     graphics::grid(nx = NA, ny = NULL)
   }
   invisible(NULL)
@@ -718,7 +724,7 @@ plot.bqr.svy <- function(
     d <- stats::density(v)
     graphics::plot(d, main = if (is.null(main)) sprintf("Posterior density: %s (tau=%.3f)", nm, tau[1]) else main,
                    xlab = nm)
-    graphics::abline(v = stats::median(v), col = "red", lty = 2)
+    graphics::abline(v = mean(v), col = "red", lty = 2)
     graphics::grid(nx = NA, ny = NULL)
   }
   invisible(NULL)

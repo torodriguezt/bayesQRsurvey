@@ -1,8 +1,8 @@
 # ======================================================================
 # Shared accessors for fitted objects
 #
-# Every extractor method (coef, vcov, confint, fitted, predict, as.matrix,
-# diagnostics, ...) and every plotting routine resolves quantiles and pulls
+# Every extractor method (coef, fitted, vcov, posterior_interval, diagnostics)
+# and every plotting routine resolves quantiles and pulls
 # posterior draws through the two helpers below, so that the "which tau is this"
 # and "does this fit carry a sigma column" conventions live in exactly one place.
 # ======================================================================
@@ -61,3 +61,10 @@
 
   D
 }
+
+# Design matrix of a fit, rebuilt from the stored terms and model frame.
+#
+# Both classes keep $terms and $model, so one helper serves them. Rebuilding
+# rather than storing X keeps the fitted object smaller and guarantees the
+# matrix always matches the terms actually used.
+.model_matrix <- function(x) stats::model.matrix(x$terms, x$model)
