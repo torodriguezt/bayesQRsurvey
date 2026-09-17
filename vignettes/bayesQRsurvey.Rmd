@@ -35,8 +35,8 @@ The package covers two model families:
   a quantile is not a curve but a nested family of convex regions.
 
 Both functions return objects with `print()`, `summary()` and `plot()`
-methods, together with the extractor methods used for regression fits in base
-R (`coef()`, `fitted()`, `vcov()`, `nobs()`, `weights()`, `predict()`, ...);
+methods, together with the generic accessor functions used for regression fits
+in base R (`coef()`, `fitted()`, `vcov()`, `nobs()`, `weights()`, `predict()`, ...);
 see `?bqr.svy.methods` and `?mo.bqr.svy.methods` for the full list. This
 vignette introduces them through a worked example.
 
@@ -118,7 +118,7 @@ Convergence diagnostics are computed for every level and retrieved with
 diagnostics(fit_ald, tau = 0.5)
 ```
 
-The estimates are reached through the usual extractors rather than the
+The estimates are reached through the usual accessors rather than the
 components of the object: `coef()` returns the posterior means, `vcov()` the
 posterior covariance matrix, and `as.matrix()` the draws themselves.
 `predict()` evaluates the estimated conditional quantile at new covariate
