@@ -4,7 +4,7 @@
 ## Reproduces every figure, output and table in the manuscript.
 ## Figures are written to ./Figures. Runtime: about two minutes.
 
-## Installation. The results below were produced with bayesQRsurvey 0.3.1.
+## Installation. The results below were produced with bayesQRsurvey 0.4.0.
 
 install.packages("bayesQRsurvey", repos = "https://cloud.r-project.org")
 
@@ -15,6 +15,9 @@ library("patchwork")
 
 ## Cosmetic settings, not shown in the manuscript. They affect only the
 ## appearance of the saved figures, as do the ggsave() calls below.
+## Console output in the manuscript is printed with four significant digits.
+
+options(digits = 4)
 
 OUT <- "Figures"
 dir.create(OUT, showWarnings = FALSE)
@@ -95,7 +98,7 @@ fit_ald <- bqr.svy(wgt ~ age + I(age^2) + sex, weights = dweight,
 
 fit_ald
 print(summary(fit_ald), tau = 0.5)
-fit_ald$diagnosis[["tau=0.500"]]
+diagnostics(fit_ald, tau = 0.5)
 
 ## Figure 2: trace plots (top) and posterior densities (bottom) at tau = 0.5.
 
@@ -145,6 +148,25 @@ p10
 ggsave(file.path(OUT, "figure10_quantile_ald.pdf"), diag_style(p10),
        width = 8, height = 6)
 
+## Extracting results: the standard extractor methods.
+
+coef(fit_ald, tau = 0.5)
+vcov(fit_ald, tau = 0.5)
+head(fitted(fit_ald, tau = 0.5))
+nobs(fit_ald)
+head(weights(fit_ald))
+sigma(fit_ald)
+
+draws <- as.matrix(fit_ald, tau = 0.5)
+dim(draws)
+head(draws, 3)
+
+## Prediction: the conditional quantiles for a two-year-old boy and girl.
+
+nd <- data.frame(age = 2, sex = c("Boys", "Girls"))
+predict(fit_ald, newdata = nd)
+predict(fit_ald, newdata = nd, tau = 0.9, interval = "credible")
+
 ## The same model under the two remaining methods.
 
 set.seed(50)
@@ -158,6 +180,15 @@ fit_ap <- bqr.svy(wgt ~ age + I(age^2) + sex, weights = dweight,
                   data = Anthro, method = "approximate",
                   quantile = c(0.1, 0.5, 0.9),
                   niter = 350000, burnin = 50000, thin = 50, verbose = FALSE)
+
+## update() changes part of the call; evaluate = FALSE shows the call itself.
+
+update(fit_ald, method = "score", niter = 50000, evaluate = FALSE)
+
+## The model specification.
+
+formula(fit_ald)
+head(model.matrix(fit_ald), 3)
 
 ## Fit under an informative prior.
 
@@ -185,12 +216,16 @@ fit_mo <- mo.bqr.svy(cbind(wgt, hgt) ~ age + I(age^2) + sex,
 fit_mo
 print(summary(fit_mo), coefficients = FALSE)
 
+## EM convergence by direction, and the coefficients of one direction.
+
+head(diagnostics(fit_mo, tau = 0.05), 4)
+coef(fit_mo, tau = 0.05, direction = 1)
+
 ## Figure 5: nested quantile regions for a two-year-old boy.
 
-plotQuantileRegion(fit_mo, response = c("wgt", "hgt"),
-                   datafile = Anthro, xValue = c(1, 2, 4, 0),
-                   ngridpoints = 450, paintedArea = FALSE,
-                   color_palette = "grey", theme_style = "none")
+plot(fit_mo, xValue = c(1, 2, 4, 0),
+     ngridpoints = 450, paintedArea = FALSE,
+     color_palette = "grey", theme_style = "none")
 
 ggsave(file.path(OUT, "plotQuantileRegion1.pdf"), width = 6.5, height = 5.5)
 
