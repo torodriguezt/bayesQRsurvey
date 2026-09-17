@@ -35,7 +35,10 @@ The package covers two model families:
   a quantile is not a curve but a nested family of convex regions.
 
 Both functions return objects with `print()`, `summary()` and `plot()`
-methods. This vignette introduces them through a worked example.
+methods, together with the extractor methods used for regression fits in base
+R (`coef()`, `fitted()`, `vcov()`, `nobs()`, `weights()`, `predict()`, ...);
+see `?bqr.svy.methods` and `?mo.bqr.svy.methods` for the full list. This
+vignette introduces them through a worked example.
 
 The package is installed from CRAN in the usual way.
 
@@ -108,11 +111,26 @@ single quantile level.
 print(summary(fit_ald), tau = 0.5)
 ```
 
-Convergence diagnostics are computed for every level and stored in
-`$diagnosis`.
+Convergence diagnostics are computed for every level and retrieved with
+`diagnostics()`, selecting the level numerically.
 
 ```{r}
-fit_ald$diagnosis[["tau=0.500"]]
+diagnostics(fit_ald, tau = 0.5)
+```
+
+The estimates are reached through the usual extractors rather than the
+components of the object: `coef()` returns the posterior means, `vcov()` the
+posterior covariance matrix, and `as.matrix()` the draws themselves.
+`predict()` evaluates the estimated conditional quantile at new covariate
+values — the quantile itself, not the average response — with an optional
+credible band from the draws.
+
+```{r}
+coef(fit_ald, tau = 0.5)
+
+nd <- data.frame(age = 2, sex = c("Boys", "Girls"))
+predict(fit_ald, newdata = nd)
+predict(fit_ald, newdata = nd, tau = 0.9, interval = "credible")
 ```
 
 ### Graphical output
@@ -214,17 +232,17 @@ whether the directional fits converged.
 print(summary(fit_mo), coefficients = FALSE)
 ```
 
-The function `plotQuantileRegion()` intersects the half-spaces for a chosen
-covariate profile and draws the resulting contours over the observed
-responses. The profile is supplied through `xValue`, in the order of the
-design-matrix columns, here `(Intercept)`, `age`, `I(age^2)` and `sexGirls`,
-evaluated at a two-year-old boy.
+The `plot()` method intersects the half-spaces for a chosen covariate profile
+and draws the resulting contours over the observed responses. The response
+names and the data are taken from the fitted object. The profile is supplied
+through `xValue`, in the order of the design-matrix columns, here
+`(Intercept)`, `age`, `I(age^2)` and `sexGirls`, evaluated at a two-year-old
+boy.
 
 ```{r, fig.height = 5.5}
-plotQuantileRegion(fit_mo, response = c("wgt", "hgt"),
-                   datafile = Anthro, xValue = c(1, 2, 4, 0),
-                   ngridpoints = 200, paintedArea = FALSE,
-                   color_palette = "grey", theme_style = "none")
+plot(fit_mo, xValue = c(1, 2, 4, 0),
+     ngridpoints = 200, paintedArea = FALSE,
+     color_palette = "grey", theme_style = "none")
 ```
 
 The contours are nested and convex, and they are read from the outside in: the
