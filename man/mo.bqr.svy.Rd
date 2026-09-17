@@ -53,7 +53,8 @@ directions are generated (only relevant when \code{n_dir} is used and \code{d > 
 Has no effect when \code{U} is supplied explicitly.}
 }
 \value{
-An object of class \code{"mo.bqr.svy"} containing:
+An object of class \code{"mo.bqr.svy"} with the components listed
+below.
 \item{call}{The matched call}
 \item{formula}{The model formula}
 \item{terms}{The terms object}
@@ -77,9 +78,11 @@ estimated value of \eqn{\sigma} (posterior mode from EM).}
 \item{estimate_sigma}{Logical flag indicating whether the scale parameter
 \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 
-Use \code{\link{diagnostics}} to inspect EM convergence rather than reaching
-into \code{fit}. Note that estimation is by EM, so a fit stores posterior
-modes and carries no quantification of posterior uncertainty.
+Rather than reaching into these components directly, use the extractor
+methods documented in \code{\link{mo.bqr.svy.methods}} (\code{coef},
+\code{sigma}, \code{nobs} and others), together with
+\code{\link{diagnostics}} for EM convergence. Note that estimation is by EM, so a fit stores posterior modes
+and carries no quantification of posterior uncertainty.
 }
 \description{
 mo.bqr.svy implements a Bayesian approach to multiple-output quantile regression

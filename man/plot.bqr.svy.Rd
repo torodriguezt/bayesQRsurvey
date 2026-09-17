@@ -55,8 +55,8 @@ panels are arranged with \code{facet_wrap}.}
 
 \item{add_points}{(fit) Logical; overlay observed data points.}
 
-\item{combine}{(fit) Logical; if multiple \code{tau}: \code{TRUE} overlays
-curves in one panel; \code{FALSE} uses one panel per quantile.}
+\item{combine}{(fit) Logical; with several \code{tau}, \code{TRUE} overlays
+the curves in one panel and \code{FALSE} uses one panel per quantile.}
 
 \item{show_ci}{(fit) Logical; draw credible bands.}
 
@@ -113,24 +113,24 @@ It can display fitted quantile curves, coefficient-quantile profiles,
 MCMC trace plots, and posterior densities.
 }
 \details{
-Supported plot types:
+The \code{type} argument selects one of four displays.
 \itemize{
-\item \code{type = "fit"}: Fitted quantile curves versus a single
+\item \code{type = "fit"} draws the fitted quantile curves versus a single
 numeric predictor (selected via \code{which}). Optionally overlay
 observed points and credible bands. Other covariates can be held
 fixed via \code{at}.
-\item \code{type = "quantile"}: A single coefficient as a function
+\item \code{type = "quantile"} draws a single coefficient as a function
 of the quantile \eqn{\tau}. Optionally add a reference line at 0 and
 the corresponding OLS estimate.
-\item \code{type = "trace"}: MCMC trace(s) at a chosen \eqn{\tau}. One or
-several coefficients may be selected via \code{which}; when more
+\item \code{type = "trace"} draws MCMC traces at a chosen \eqn{\tau}. One
+or several coefficients may be selected via \code{which}; when more
 than one is shown the panels are arranged with \code{facet_wrap}.
-\item \code{type = "density"}: Posterior density(ies) at a chosen
+\item \code{type = "density"} draws posterior densities at a chosen
 \eqn{\tau}, faceted over the selected coefficients as for
 \code{type = "trace"}.
 }
 
-Notes:
+Additional details on the arguments.
 \itemize{
 \item \code{tau} must be included in \code{x$quantile}. If \code{NULL}, all
 available quantiles in the object are used.

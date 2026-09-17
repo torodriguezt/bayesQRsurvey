@@ -4,35 +4,72 @@
 \alias{bqr.svy.methods}
 \alias{coef.bqr.svy}
 \alias{fitted.bqr.svy}
-\alias{confint.bqr.svy}
+\alias{vcov.bqr.svy}
+\alias{print.bqr.svy.vcov}
+\alias{nobs.bqr.svy}
+\alias{as.matrix.bqr.svy}
+\alias{sigma.bqr.svy}
+\alias{formula.bqr.svy}
+\alias{terms.bqr.svy}
+\alias{model.matrix.bqr.svy}
+\alias{weights.bqr.svy}
+\alias{update.bqr.svy}
 \title{Extract results from a fitted survey quantile regression}
 \usage{
 \method{coef}{bqr.svy}(object, tau = NULL, ...)
 
 \method{fitted}{bqr.svy}(object, tau = NULL, ...)
 
-\method{confint}{bqr.svy}(object, parm, level = 0.95, tau = NULL, ...)
+\method{vcov}{bqr.svy}(object, tau = NULL, ...)
+
+\method{print}{bqr.svy.vcov}(x, digits = 4, ...)
+
+\method{nobs}{bqr.svy}(object, ...)
+
+\method{as.matrix}{bqr.svy}(x, tau = NULL, include_sigma = NULL, ...)
+
+\method{sigma}{bqr.svy}(object, tau = NULL, ...)
+
+\method{formula}{bqr.svy}(x, ...)
+
+\method{terms}{bqr.svy}(x, ...)
+
+\method{model.matrix}{bqr.svy}(object, ...)
+
+\method{weights}{bqr.svy}(object, ...)
+
+\method{update}{bqr.svy}(object, formula., ..., evaluate = TRUE)
 }
 \arguments{
-\item{object}{an object of class \code{"bqr.svy"}.}
+\item{object, x}{an object of class \code{"bqr.svy"}.}
 
 \item{tau}{numeric vector of fitted quantiles to extract. \code{NULL} (default)
-selects every quantile in the fit. Asking for a quantile that was not fitted
-is an error.}
+selects every quantile in the fit.}
 
 \item{...}{further arguments passed to or from other methods.}
 
-\item{parm}{a specification of which parameters to report, either a vector of
-names or of positions. Defaults to all coefficients.}
+\item{digits}{integer; number of decimal places used when printing the
+covariance matrix returned by \code{vcov}. Default \code{4}.}
 
-\item{level}{the credible level required.}
+\item{include_sigma}{logical; whether to keep the scale parameter column in
+the returned draws. Defaults to whether the model estimated it.}
+
+\item{formula.}{a change to the model formula, in the form used by
+\code{\link[stats]{update}}.}
+
+\item{evaluate}{logical; if \code{TRUE} (default) the updated call is
+evaluated and the new fit returned, otherwise the call itself is returned.}
 }
 \value{
-\code{coef} a named vector for a single quantile, otherwise a matrix
-with one column per quantile. \code{fitted} a vector for a single quantile,
-otherwise a matrix with one column per quantile. \code{confint} a matrix
-with the lower and upper bounds for a single quantile, otherwise a named
-list of such matrices.
+\code{coef} and \code{fitted} return a vector for a single quantile,
+otherwise a matrix with one column per quantile. \code{vcov} returns a
+matrix for a single quantile, otherwise a named list of matrices. Matrix
+arithmetic on it behaves as on any numeric matrix; \code{unclass} drops the
+class that governs printing.
+\code{as.matrix} returns the draws by parameters matrix of posterior draws
+for one quantile. \code{sigma} returns a scalar for a single quantile and a
+named vector otherwise. \code{nobs} returns the number of observations and
+\code{weights} the vector of survey weights.
 }
 \description{
 Extractor methods for objects of class \code{"bqr.svy"} returned by
@@ -44,16 +81,32 @@ methods in \pkg{stats}.
 
 \code{fitted} evaluates the estimated conditional quantile function
 \eqn{\hat{Q}_\tau(y \mid x) = x^\prime \bar{\beta}(\tau)} at the observed
-covariates. Note that the corresponding residuals are not centred at zero, as
-they would be for a mean regression: because \eqn{\beta(\tau)} solves the
-survey-weighted check-function problem, it is the \emph{weighted} share of
-negative residuals that approaches \eqn{\tau}.
+covariates.
 
-\code{confint} returns equal-tailed credible intervals obtained from the
-posterior draws, so its values agree with those reported by
-\code{\link[=summary.bqr.svy]{summary}}. They describe posterior uncertainty
-about where the conditional quantile lies, and are not prediction intervals
-for a new observation.
+\code{vcov} returns the posterior covariance matrix of the coefficients,
+computed from the posterior draws. It is a numeric matrix, stored at full
+precision; only its \code{print} method rounds, to \code{digits} decimal
+places.
+
+\code{as.matrix} returns the posterior draws themselves. They are the basis
+for any further inference, such as posterior probabilities like
+\eqn{P(\beta_j > 0)}, contrasts between quantiles, or passing the draws to
+packages such as \pkg{coda} or \pkg{bayesplot}.
+
+\code{sigma} returns the scale parameter of the working likelihood. It is the
+posterior mean when \code{method = "ald"} and \code{estimate_sigma = TRUE},
+exactly \code{1} when \code{"ald"} holds it fixed, and \code{NA} for the
+\code{"score"} and \code{"approximate"} methods, which have no scale
+parameter.
+
+\code{formula} returns the formula as supplied, \code{terms} its terms
+object, and \code{model.matrix} the design matrix the fit was built on.
+\code{weights} returns the survey weights as supplied, without
+normalisation. \code{update} refits the model with part of the call changed.
+
+These are point summaries, evaluated at the posterior mean. The posterior
+credible intervals of the coefficients are computed by
+\code{\link[=posterior_interval.bqr.svy]{posterior_interval}}.
 }
 \examples{
 \donttest{
@@ -67,12 +120,22 @@ fit <- bqr.svy(y ~ x1 + x2, weights = w, data = d,
 
 coef(fit)                # one column per quantile
 coef(fit, tau = 0.5)     # a single named vector
-confint(fit, tau = 0.5)
+vcov(fit, tau = 0.5)
 head(fitted(fit, tau = 0.5))
+nobs(fit)
+head(weights(fit))       # the survey weights, as supplied
+
+# the posterior draws, one row per retained iteration
+draws <- as.matrix(fit, tau = 0.5)
+dim(draws)
+mean(draws[, "x1"] > 0)                       # P(beta_x1 > 0)
 }
 
 }
 \seealso{
-\code{\link{bqr.svy}}, \code{\link{diagnostics}},
+\code{\link{bqr.svy}}, \code{\link{bqr.svy.posterior}} for the
+posterior draws and credible intervals,
+\code{\link[=predict.bqr.svy]{predict}} for the conditional quantile at
+new covariate values, \code{\link{diagnostics}},
 \code{\link[=summary.bqr.svy]{summary}}
 }

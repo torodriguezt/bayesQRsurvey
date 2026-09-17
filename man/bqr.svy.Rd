@@ -51,10 +51,11 @@ If \code{NULL} (default), \eqn{\pi_i = 1/w_i} and only the first term of \eqn{\t
 is used, yielding a biased estimator (a warning is issued).}
 }
 \value{
-An object of class \code{"bqr.svy"}. Its shape does not depend on how
-many quantiles were fitted: quantile-specific components always hold one entry
-per quantile, named \code{"tau=0.500"} and so on, and a single quantile is
-simply the one-entry case. The components are:
+An object of class \code{"bqr.svy"} with the components listed below.
+The components that depend on the quantile (\code{beta}, \code{draws},
+\code{diagnosis} and \code{accept_rate}) have one entry per fitted quantile,
+named \code{"tau=0.100"}, \code{"tau=0.500"} and so on, also when a single
+quantile was fitted.
 \item{beta}{Matrix of posterior mean estimates of the regression coefficients,
 with one row per coefficient and one column per quantile.}
 \item{draws}{Named list of posterior draw matrices, one per quantile.}
@@ -72,9 +73,10 @@ with one row per coefficient and one column per quantile.}
 \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 
 Rather than reaching into these components directly, use the extractor
-methods documented in \code{\link{bqr.svy.methods}} — \code{coef},
-\code{fitted} and \code{confint} — together with \code{\link{diagnostics}},
-all of which select quantiles numerically through a \code{tau} argument.
+methods documented in \code{\link{bqr.svy.methods}} (\code{coef},
+\code{fitted}, \code{vcov}, \code{nobs} and others), together with
+\code{\link{posterior_interval}} and \code{\link{diagnostics}}. All of them
+select quantiles numerically through a \code{tau} argument.
 }
 \description{
 \code{bqr.svy} implements Bayesian methods for estimating quantile regression models

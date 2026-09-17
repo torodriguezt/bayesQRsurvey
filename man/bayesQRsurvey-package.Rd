@@ -4,17 +4,17 @@
 \name{bayesQRsurvey-package}
 \alias{bayesQRsurvey}
 \alias{bayesQRsurvey-package}
-\title{bayesQRsurvey: Bayesian quantile regression models for complex survey data}
+\title{Bayesian quantile regression models for complex survey data}
 \description{
 The bayesQRsurvey package provides Bayesian quantile regression methods for complex
-survey designs with two main functions:
+survey designs through two main functions.
 }
 \details{
 \itemize{
-\item \code{bqr.svy()}: Bayesian methods for estimating quantile regression models
-using MCMC methods
-\item \code{mo.bqr.svy()}: Bayesian approach to multiple-output quantile regression
-using EM algorithm
+\item \code{bqr.svy()} estimates single-output quantile regression models
+using MCMC methods.
+\item \code{mo.bqr.svy()} estimates multiple-output quantile regression
+models using an EM algorithm.
 }
 }
 \section{Main functions}{
@@ -32,11 +32,13 @@ using EM algorithm
 
 The bqr.svy function can estimate three types of models, where the quantile regression
 coefficients are defined at the super-population level, and their estimators are
-built upon the survey weights.:
+built upon the survey weights.
 \itemize{
-\item \strong{ALD (Asymmetric Laplace Distribution)}: Uses asymmetric Laplace likelihood
-\item \strong{Score}: Uses score-based approach
-\item \strong{Approximate}: Uses approximate methods for faster computation
+\item \strong{ALD (Asymmetric Laplace Distribution)}, which uses the
+asymmetric Laplace likelihood.
+\item \strong{Score}, which uses a score-based approach.
+\item \strong{Approximate}, which uses approximate methods for faster
+computation.
 }
 }
 
