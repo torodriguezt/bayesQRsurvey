@@ -23,7 +23,7 @@
 #' values, optionally with a credible band.
 #'
 #' What is returned is the conditional quantile itself. With
-#' \code{tau = 0.9}, it is the value below which 90\% of the responses fall
+#' \code{tau = 0.9}, it is the value below which 90% of the responses fall
 #' among units sharing those covariates. It is a summary of the conditional
 #' distribution, in the same sense that \code{\link[stats]{predict.lm}} returns
 #' the conditional mean, and not a draw of a new response.

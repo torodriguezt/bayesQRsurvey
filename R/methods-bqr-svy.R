@@ -1,5 +1,5 @@
 # ======================================================================
-# Extractor methods for "bqr.svy" fits
+# Generic accessor functions for "bqr.svy" fits
 #
 # Quantiles are selected numerically through `tau`, resolved by .tau_index(),
 # so users never build the internal "tau=0.500" labels themselves.
@@ -11,7 +11,7 @@
 
 #' Extract results from a fitted survey quantile regression
 #'
-#' Extractor methods for objects of class \code{"bqr.svy"} returned by
+#' Generic accessor functions for objects of class \code{"bqr.svy"} returned by
 #' \code{\link{bqr.svy}}, following the conventions of the standard regression
 #' methods in \pkg{stats}.
 #'
@@ -136,7 +136,6 @@ vcov.bqr.svy <- function(object, tau = NULL, ...) {
   if (length(out) == 1L) out[[1L]] else out
 }
 
-#' @rdname bqr.svy.methods
 #' @exportS3Method print bqr.svy.vcov
 print.bqr.svy.vcov <- function(x, digits = 4, ...) {
   V <- unclass(x)

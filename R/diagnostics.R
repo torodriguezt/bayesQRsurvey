@@ -7,12 +7,11 @@
 #' Convergence diagnostics for fitted survey quantile regressions
 #'
 #' Extracts the convergence diagnostics stored by \code{\link{bqr.svy}} and
-#' \code{\link{mo.bqr.svy}}, selecting quantiles numerically rather than by
-#' internal label.
+#' \code{\link{mo.bqr.svy}}, selecting quantiles numerically.
 #'
-#' For \code{"bqr.svy"} fits the diagnostics are those of the MCMC sampler: the
-#' potential scale reduction factor \eqn{\hat{R}} together with the bulk and tail
-#' effective sample sizes, computed with the \pkg{posterior} package. As a rule of
+#' For \code{"bqr.svy"} fits the diagnostics are those of the MCMC sampler, namely
+#' the potential scale reduction factor \eqn{\hat{R}} together with the bulk and
+#' tail effective sample sizes, computed with the \pkg{posterior} package. As a rule of
 #' thumb \eqn{\hat{R} < 1.01} and effective sample sizes above 400 indicate that
 #' the chain has converged and carries enough information for stable posterior
 #' summaries.

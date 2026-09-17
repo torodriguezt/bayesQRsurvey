@@ -94,7 +94,8 @@ if (!exists("%||%"))
 #' directions are generated (only relevant when \code{n_dir} is used and \code{d > 1}).
 #' Has no effect when \code{U} is supplied explicitly.
 #'
-#' @return An object of class \code{"mo.bqr.svy"} containing:
+#' @return An object of class \code{"mo.bqr.svy"} with the components listed
+#' below.
 #'   \item{call}{The matched call}
 #'   \item{formula}{The model formula}
 #'   \item{terms}{The terms object}
@@ -118,9 +119,11 @@ if (!exists("%||%"))
 #'   \item{estimate_sigma}{Logical flag indicating whether the scale parameter
 #'                         \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 #'
-#' Use \code{\link{diagnostics}} to inspect EM convergence rather than reaching
-#' into \code{fit}. Note that estimation is by EM, so a fit stores posterior
-#' modes and carries no quantification of posterior uncertainty.
+#' To obtain the coefficients, scale estimates and related quantities, use the
+#' generic accessor functions documented in \code{\link{mo.bqr.svy.methods}},
+#' together with \code{\link{diagnostics}} for EM convergence, instead of
+#' accessing these components directly. Estimation is by EM, so a fit stores
+#' posterior modes and carries no quantification of posterior uncertainty.
 #'
 #' @references
 #' Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2024).

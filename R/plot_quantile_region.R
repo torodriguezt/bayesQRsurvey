@@ -104,7 +104,7 @@
 #'    (default = 0.8).
 #' @param verbose Logical; if \code{TRUE}, print per-quantile progress
 #'    messages (default = \code{FALSE}).
-#' @param ... Accepted for compatibility with the generic; ignored.
+#' @param ... Not used.
 #'
 #' @return Invisibly, a list with the components listed below.
 #'    \item{plot}{A \code{ggplot} object.}

@@ -36,7 +36,7 @@ NULL
 #' @param probs Two-element numeric vector with credible interval probabilities.
 #'   Default \code{c(0.025, 0.975)}.
 #' @param digits Integer; number of decimals used by printing helpers.
-#' @param ... Unused.
+#' @param ... Not used.
 #' @return An object of class \code{summary.bqr.svy} with one block per \eqn{\tau}.
 #' @exportS3Method summary bqr.svy
 summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
@@ -126,7 +126,7 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
 #' @title Summary of \code{mo.bqr.svy} fits
 #' @param object An object of class \code{mo.bqr.svy}.
 #' @param digits Integer; number of decimals used by printing helpers. Default \code{4}.
-#' @param ... Unused.
+#' @param ... Not used.
 #' @return An object of class \code{summary.mo.bqr.svy}.
 #' @exportS3Method summary mo.bqr.svy
 summary.mo.bqr.svy <- function(object, digits = 4, ...) {
@@ -469,6 +469,7 @@ print.bqr.svy <- function(x, digits = 3, ...) {
 
 
 
+#' @rdname print.bqr.svy
 #' @exportS3Method print mo.bqr.svy
 print.mo.bqr.svy <- function(x, ...) {
   rule <- strrep("-", 56)

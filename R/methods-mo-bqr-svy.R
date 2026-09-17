@@ -1,5 +1,5 @@
 # ======================================================================
-# Extractor methods for "mo.bqr.svy" fits
+# Generic accessor functions for "mo.bqr.svy" fits
 #
 # Estimation is by EM, so the object carries posterior modes and no sample from
 # the posterior. The method set therefore follows what comparable EM-based
@@ -14,8 +14,8 @@
 
 #' Extract results from a fitted multiple-output survey quantile regression
 #'
-#' Extractor methods for objects of class \code{"mo.bqr.svy"} returned by
-#' \code{\link{mo.bqr.svy}}.
+#' Generic accessor functions for objects of class \code{"mo.bqr.svy"} returned
+#' by \code{\link{mo.bqr.svy}}.
 #'
 #' Because the model is directional, results are indexed by quantile and by
 #' direction. For a given quantile the coefficient matrix has one column per
@@ -24,14 +24,12 @@
 #' numerically through \code{tau} and directions through \code{direction}.
 #'
 #' Estimation uses an EM algorithm, so a fit stores the posterior mode of the
-#' coefficients rather than a sample from the posterior. The fitted object
-#' reports point estimates; it carries no quantification of posterior
-#' uncertainty, and none is derived from it. Unlike a fit produced by
-#' \code{\link{bqr.svy}}, there is nothing here from which a covariance matrix
-#' or an interval could be computed, so \code{vcov} is defined only to report
-#' that. No \code{posterior_interval} method is provided either, since the
-#' class cannot implement it, and registering one against the \pkg{rstantools}
-#' generic would advertise a capability the fit does not have. Use
+#' coefficients rather than a sample from the posterior. Unlike a fit produced
+#' by \code{\link{bqr.svy}}, it holds no posterior draws, and a covariance
+#' matrix cannot be computed from point estimates alone. \code{vcov} is
+#' therefore defined only to fail with a message saying so, rather than being
+#' left to dispatch to the default method and return something misleading. For
+#' the same reason no \code{posterior_interval} method is provided. Use
 #' \code{\link{diagnostics}} to check that the algorithm converged.
 #'
 #' What the model estimates for a given covariate profile is a quantile region

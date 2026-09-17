@@ -87,7 +87,7 @@
 #'   \code{x$terms}.
 #' @param ols_weights (quantile) Optional numeric vector of weights when fitting
 #'   OLS internally (length must match \code{nrow(x$model)}).
-#' @param ... Accepted for compatibility; ignored by internal plotting code.
+#' @param ... Not used.
 #'
 #' @return \code{invisible(NULL)} for base R graphics, or a ggplot object if
 #'   \code{use_ggplot = TRUE}.
@@ -107,7 +107,6 @@
 #' plot(fit, type = "density", which = "wt", tau = 0.5)
 #' }
 #'
-#' @aliases plot
 #' @method plot bqr.svy
 #' @rdname plot.bqr.svy
 #' @name plot.bqr.svy

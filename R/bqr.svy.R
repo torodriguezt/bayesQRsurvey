@@ -83,10 +83,11 @@ if (!exists("%||%"))
 #'   \item \code{"approximate"} - A pseudolikelihood function based on a Gaussian approximation.
 #' }
 #'
-#' @return An object of class \code{"bqr.svy"}. Its shape does not depend on how
-#' many quantiles were fitted: quantile-specific components always hold one entry
-#' per quantile, named \code{"tau=0.500"} and so on, and a single quantile is
-#' simply the one-entry case. The components are:
+#' @return An object of class \code{"bqr.svy"} with the components listed below.
+#' The components that depend on the quantile (\code{beta}, \code{draws},
+#' \code{diagnosis} and \code{accept_rate}) have one entry per fitted quantile,
+#' named \code{"tau=0.100"}, \code{"tau=0.500"} and so on, also when a single
+#' quantile was fitted.
 #' \item{beta}{Matrix of posterior mean estimates of the regression coefficients,
 #'   with one row per coefficient and one column per quantile.}
 #' \item{draws}{Named list of posterior draw matrices, one per quantile.}
@@ -103,10 +104,13 @@ if (!exists("%||%"))
 #' \item{estimate_sigma}{Logical flag indicating whether the scale parameter
 #'   \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 #'
-#' Rather than reaching into these components directly, use the extractor
-#' methods documented in \code{\link{bqr.svy.methods}} — \code{coef},
-#' \code{fitted} and \code{confint} — together with \code{\link{diagnostics}},
-#' all of which select quantiles numerically through a \code{tau} argument.
+#' To obtain the coefficients, fitted values, covariance matrices and related
+#' quantities, use the generic accessor functions documented in
+#' \code{\link{bqr.svy.methods}}, together with
+#' \code{\link{posterior_interval}} for credible intervals and
+#' \code{\link{diagnostics}} for convergence, instead of accessing these
+#' components directly. All of them select quantiles numerically through a
+#' \code{tau} argument.
 #'
 #' @references
 #' Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2024).
