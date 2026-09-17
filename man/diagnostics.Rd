@@ -26,8 +26,7 @@ such data frames when several quantiles are selected.
 }
 \description{
 Extracts the convergence diagnostics stored by \code{\link{bqr.svy}} and
-\code{\link{mo.bqr.svy}}, selecting quantiles numerically rather than by
-internal label.
+\code{\link{mo.bqr.svy}}, selecting quantiles numerically.
 }
 \details{
 For \code{"bqr.svy"} fits the diagnostics are those of the MCMC sampler, namely

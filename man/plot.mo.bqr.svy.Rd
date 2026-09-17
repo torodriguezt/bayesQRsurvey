@@ -72,7 +72,7 @@ observed-data point cloud (default = 0.3).}
 \item{verbose}{Logical; if \code{TRUE}, print per-quantile progress
 messages (default = \code{FALSE}).}
 
-\item{...}{Accepted for compatibility with the generic; ignored.}
+\item{...}{Not used.}
 }
 \value{
 Invisibly, a list with the components listed below.

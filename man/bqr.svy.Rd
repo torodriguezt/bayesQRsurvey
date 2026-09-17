@@ -72,11 +72,13 @@ with one row per coefficient and one column per quantile.}
 \item{estimate_sigma}{Logical flag indicating whether the scale parameter
 \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 
-Rather than reaching into these components directly, use the extractor
-methods documented in \code{\link{bqr.svy.methods}} (\code{coef},
-\code{fitted}, \code{vcov}, \code{nobs} and others), together with
-\code{\link{posterior_interval}} and \code{\link{diagnostics}}. All of them
-select quantiles numerically through a \code{tau} argument.
+To obtain the coefficients, fitted values, covariance matrices and related
+quantities, use the generic accessor functions documented in
+\code{\link{bqr.svy.methods}}, together with
+\code{\link{posterior_interval}} for credible intervals and
+\code{\link{diagnostics}} for convergence, instead of accessing these
+components directly. All of them select quantiles numerically through a
+\code{tau} argument.
 }
 \description{
 \code{bqr.svy} implements Bayesian methods for estimating quantile regression models

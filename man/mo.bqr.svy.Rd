@@ -78,11 +78,11 @@ estimated value of \eqn{\sigma} (posterior mode from EM).}
 \item{estimate_sigma}{Logical flag indicating whether the scale parameter
 \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 
-Rather than reaching into these components directly, use the extractor
-methods documented in \code{\link{mo.bqr.svy.methods}} (\code{coef},
-\code{sigma}, \code{nobs} and others), together with
-\code{\link{diagnostics}} for EM convergence. Note that estimation is by EM, so a fit stores posterior modes
-and carries no quantification of posterior uncertainty.
+To obtain the coefficients, scale estimates and related quantities, use the
+generic accessor functions documented in \code{\link{mo.bqr.svy.methods}},
+together with \code{\link{diagnostics}} for EM convergence, instead of
+accessing these components directly. Estimation is by EM, so a fit stores
+posterior modes and carries no quantification of posterior uncertainty.
 }
 \description{
 mo.bqr.svy implements a Bayesian approach to multiple-output quantile regression

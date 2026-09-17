@@ -3,9 +3,12 @@
 \docType{methods}
 \name{print.bqr.svy}
 \alias{print.bqr.svy}
+\alias{print.mo.bqr.svy}
 \title{Print a fitted survey quantile regression}
 \usage{
 \method{print}{bqr.svy}(x, digits = 3, ...)
+
+\method{print}{mo.bqr.svy}(x, ...)
 }
 \arguments{
 \item{x}{An object of class \code{"bqr.svy"} or \code{"mo.bqr.svy"},

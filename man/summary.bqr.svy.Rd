@@ -17,7 +17,7 @@ Default \code{c(0.025, 0.975)}.}
 
 \item{digits}{Integer; number of decimals used by printing helpers. Default \code{4}.}
 
-\item{...}{Unused.}
+\item{...}{Not used.}
 }
 \value{
 An object of class \code{summary.bqr.svy} with one block per \eqn{\tau}.

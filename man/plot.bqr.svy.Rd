@@ -2,7 +2,6 @@
 % Please edit documentation in R/plot_quantile.R
 \name{plot.bqr.svy}
 \alias{plot.bqr.svy}
-\alias{plot}
 \title{Plot method for Bayesian quantile regression fits}
 \usage{
 \method{plot}{bqr.svy}(
@@ -101,7 +100,7 @@ selected coefficient.}
 \item{ols_weights}{(quantile) Optional numeric vector of weights when fitting
 OLS internally (length must match \code{nrow(x$model)}).}
 
-\item{...}{Accepted for compatibility; ignored by internal plotting code.}
+\item{...}{Not used.}
 }
 \value{
 \code{invisible(NULL)} for base R graphics, or a ggplot object if
