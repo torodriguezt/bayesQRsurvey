@@ -33,7 +33,8 @@ Imports:
     pracma,
     ggplot2,
     rlang,
-    posterior
+    posterior,
+    rstantools
 Suggests:
     MASS,
     knitr,
