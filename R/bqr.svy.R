@@ -99,6 +99,9 @@ if (!exists("%||%"))
 #' \item{warmup, thin, niter}{MCMC control parameters used during sampling.}
 #' \item{prior}{Prior specification used.}
 #' \item{call, formula, terms, model}{Model specification details.}
+#' \item{xlevels, contrasts}{Factor levels and contrasts of the model frame,
+#'   used by \code{\link[=predict.bqr.svy]{predict}} to rebuild the design
+#'   matrix consistently from \code{newdata}.}
 #' \item{runtime}{Elapsed runtime in seconds.}
 #' \item{method}{Estimation method}
 #' \item{estimate_sigma}{Logical flag indicating whether the scale parameter
@@ -407,6 +410,8 @@ bqr.svy <- function(formula,
     formula        = formula,
     terms          = mt,
     model          = mf,
+    xlevels        = stats::.getXlevels(mt, mf),
+    contrasts      = attr(X, "contrasts"),
     quantile       = taus,
     method         = method,
     beta           = beta_mat,

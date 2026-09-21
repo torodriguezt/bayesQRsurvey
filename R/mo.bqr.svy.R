@@ -99,6 +99,8 @@ if (!exists("%||%"))
 #'   \item{call}{The matched call}
 #'   \item{formula}{The model formula}
 #'   \item{terms}{The terms object}
+#'   \item{xlevels, contrasts}{Factor levels and contrasts of the model frame,
+#'     kept so that the design matrix can be rebuilt consistently from new data}
 #'   \item{quantile}{Vector of fitted quantiles}
 #'   \item{prior}{List of priors used for each quantile}
 #'   \item{fit}{List of fitted results for each quantile, each containing one sub-list per direction}
@@ -516,6 +518,8 @@ mo.bqr.svy <- function(formula,
     formula         = formula,
     terms           = attr(mf, "terms"),
     model           = mf,
+    xlevels         = stats::.getXlevels(attr(mf, "terms"), mf),
+    contrasts       = attr(X, "contrasts"),
     quantile        = quantile,
     prior           = pri,
     fit             = results,
