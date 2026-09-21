@@ -324,3 +324,32 @@ test_that("predict rebuilds factors and transformed terms from newdata", {
   bad <- data.frame(g = factor("z"), x = 2)
   expect_error(predict(fit, bad, tau = 0.5))
 })
+
+
+test_that("predict accepts character columns for variables fitted as factors", {
+  set.seed(92)
+  n <- 200
+  d <- data.frame(g = factor(sample(c("a", "b", "c"), n, TRUE)),
+                  x = runif(n, -1, 1), w = runif(n, 1, 2))
+  d$y <- 1 + as.numeric(d$g) + 2 * d$x + rnorm(n)
+  fit <- suppressWarnings(
+    bqr.svy(y ~ g + x, weights = w, data = d, quantile = 0.5,
+            niter = 800, burnin = 200, verbose = FALSE)
+  )
+
+  # data.frame() no longer builds factors from strings, so newdata written the
+  # obvious way arrives as character; the stored xlevels must absorb that
+  chr <- data.frame(g = c("a", "b"), x = 0)
+  fac <- data.frame(g = factor(c("a", "b"), levels = levels(d$g)), x = 0)
+  expect_equal(predict(fit, chr, tau = 0.5), predict(fit, fac, tau = 0.5))
+
+  # a single level in newdata keeps the coding of the fit instead of becoming
+  # its own baseline
+  one <- predict(fit, data.frame(g = "b", x = 0), tau = 0.5)
+  cf  <- coef(fit, tau = 0.5)
+  expect_equal(unname(one), unname(cf[["(Intercept)"]] + cf[["gb"]]))
+
+  ci <- predict(fit, chr, tau = 0.5, interval = "credible")
+  expect_equal(colnames(ci), c("fit", "lower", "higher"))
+  expect_true(all(is.finite(ci)))
+})

@@ -48,6 +48,23 @@ test_that("the object shape does not depend on the number of quantiles", {
 })
 
 
+test_that("the fit carries the xlevels and contrasts of the model frame", {
+  set.seed(11)
+  n <- 80
+  d <- data.frame(g = factor(sample(c("a", "b", "c"), n, TRUE)),
+                  x = runif(n, -1, 1), w = runif(n, 1, 2))
+  d$y <- as.numeric(d$g) + d$x + rnorm(n)
+  fit <- suppressWarnings(
+    bqr.svy(y ~ g + x, weights = w, data = d, quantile = 0.5,
+            niter = 500, burnin = 100, verbose = FALSE)
+  )
+
+  # predict() needs both to rebuild the design matrix of newdata
+  expect_equal(fit$xlevels, list(g = c("a", "b", "c")))
+  expect_equal(fit$contrasts, list(g = "contr.treatment"))
+})
+
+
 test_that("quantiles are sorted and de-duplicated", {
   fit <- toy_fit(c(0.75, 0.25))
   expect_equal(fit$quantile, c(0.25, 0.75))
