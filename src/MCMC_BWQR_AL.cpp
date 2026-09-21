@@ -152,7 +152,8 @@ Rcpp::List _mcmc_bwqr_al_cpp(
 
   beta_chain.row(0) = arma::solve(X, y).t();
   sigma_chain[0] = use_fixed_sigma ? sigma_fixed_val : 1.0;
-  arma::vec v = arma::randg<arma::vec>(n, arma::distr_param(2.0, 1.0));
+  arma::vec v(n);
+  for (int i = 0; i < n; ++i) v[i] = R::rgamma(2.0, 1.0);
 
   const double delta2 = 2.0 / (tau * (1.0 - tau));
   const double theta  = (1.0 - 2.0 * tau) / (tau * (1.0 - tau));
