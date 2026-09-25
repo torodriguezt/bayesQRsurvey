@@ -101,14 +101,14 @@ print(summary(fit_mo), coefficients = FALSE)
 #>  0.150     20/20    49 / 163 / 345     1
 ```
 
-`plotQuantileRegion()` intersects the directional half-spaces for a chosen
+`plot()` intersects the directional half-spaces for a chosen
 covariate profile, here a two-year-old boy, and draws the resulting contours
 over the observed responses. The regions are nested and convex, and are read
-from the outside in.
+from the outside in. Region plots are available for models with exactly two
+response variables.
 
 ```r
-plotQuantileRegion(fit_mo, response = c("wgt", "hgt"), datafile = Anthro,
-                   xValue = c(1, 2, 4, 0), paintedArea = FALSE)
+plot(fit_mo, xValue = c(1, 2, 4, 0), paintedArea = FALSE)
 ```
 
 <img src="man/figures/README-region.png" width="70%" />
