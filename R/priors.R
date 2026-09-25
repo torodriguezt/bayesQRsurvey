@@ -24,8 +24,10 @@ if (!exists("%||%"))
 #'
 #' @param beta_x_mean vector of prior means for the regression coefficients. (default = NULL).
 #' @param beta_x_cov prior covariance matrix for the regression coefficients. (default = NULL).
-#' @param sigma_shape shape parameter for inverse Gamma prior for \eqn{\sigma^2}. (default = 0.001).
-#' @param sigma_rate rate parameter for inverse Gamma prior for \eqn{\sigma^2}. (default = 0.001).
+#' @param sigma_shape shape parameter for the inverse Gamma prior on the ALD
+#'   scale \eqn{\sigma}. (default = 0.001).
+#' @param sigma_rate parameter multiplying \eqn{1/\sigma} in the exponential
+#'   of the inverse Gamma prior density. (default = 0.001).
 #' @param beta_y_mean prior means for the coefficients related to the variables that emerge from the product between the orthogonal basis and the outputs
 #' (default = NULL).
 #' @param beta_y_cov prior covariance matrix for the coefficients related to the variables that emerge from the product between the orthogonal basis and the outputs.
@@ -35,6 +37,9 @@ if (!exists("%||%"))
 #' The function \code{prior} builds prior distributions for the three methods implemented in the function
 #' \code{bqr.svy} and for the multiple-output quantile regression implemented in the function \code{mo.bqr.svy}.
 #' Every nonspecified prior parameter will get the default value.
+#' The scale prior has density proportional to
+#' \eqn{\sigma^{-a-1}\exp(-b/\sigma)}, where \eqn{a} is
+#' \code{sigma_shape} and \eqn{b} is \code{sigma_rate}.
 #'
 #' \itemize{
 #'   \item \code{method = "ald"} in function \code{bqr.svy} allow the specification of hyperparameters
