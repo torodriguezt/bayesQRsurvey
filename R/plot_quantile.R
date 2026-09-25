@@ -148,7 +148,7 @@ plot.bqr.svy <- function(
   tt <- x$terms
   if (is.null(mf) || is.null(tt)) stop("Object does not contain 'model' and/or 'terms'.", call. = FALSE)
 
-  X_colnames <- colnames(stats::model.matrix(tt, mf))
+  X_colnames <- colnames(.model_matrix(x))
   resp <- as.character(stats::formula(tt))[2]
 
   # Helpers --------------------------
@@ -275,7 +275,8 @@ plot.bqr.svy <- function(
       stop("Could not determine predictor. Pass it via 'which'.", call. = FALSE)
 
     newdata <- .make_newdata(predictor, at, grid_length)
-    Xg <- stats::model.matrix(stats::delete.response(tt), newdata)
+    Xg <- stats::model.matrix(stats::delete.response(tt), newdata,
+                              contrasts.arg = x$contrasts)
     if (!all(colnames(Xg) %in% X_colnames)) {
       stop("The design matrix of 'newdata' does not match the fit.", call. = FALSE)
     }
@@ -390,8 +391,11 @@ plot.bqr.svy <- function(
     if (isTRUE(add_ols)) {
       if (is.null(ols_fit)) {
         fm <- stats::formula(tt)
-        if (is.null(ols_weights)) ols_fit_obj <- stats::lm(fm, data = mf)
-        else                      ols_fit_obj <- stats::lm(fm, data = mf, weights = ols_weights)
+        if (is.null(ols_weights))
+          ols_fit_obj <- stats::lm(fm, data = mf, contrasts = x$contrasts)
+        else
+          ols_fit_obj <- stats::lm(fm, data = mf, weights = ols_weights,
+                                   contrasts = x$contrasts)
       } else {
         ols_fit_obj <- ols_fit
       }

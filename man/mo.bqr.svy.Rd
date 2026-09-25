@@ -21,11 +21,13 @@ mo.bqr.svy(
 )
 }
 \arguments{
-\item{formula}{a symbolic description of the model to be fit.}
+\item{formula}{a symbolic description of the model to be fit. Offset terms
+are not supported.}
 
 \item{weights}{an optional numerical vector containing the survey weights. If \code{NULL}, equal weights are used.}
 
-\item{data}{an optional data frame containing the variables in the model.}
+\item{data}{an optional data frame containing the variables in the model.
+Missing values must be removed or imputed before fitting.}
 
 \item{quantile}{numerical scalar or vector containing quantile(s) of interest (default=0.5).}
 
@@ -46,7 +48,7 @@ and \eqn{K} indicates indicates the number of directions.}
 \item{verbose}{logical flag indicating whether to print progress messages (default=FALSE).}
 
 \item{estimate_sigma}{logical flag indicating whether to estimate the scale parameter
-when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)}
+(default=FALSE, with \eqn{\sigma} fixed at 1).}
 
 \item{seed}{optional integer seed passed to \code{\link{set.seed}} before random
 directions are generated (only relevant when \code{n_dir} is used and \code{d > 1}).
@@ -78,7 +80,7 @@ estimated value of \eqn{\sigma} (posterior mode from EM).}
 \item{n_vars}{Number of covariates}
 \item{response_dim}{Dimension of the response \eqn{d}}
 \item{estimate_sigma}{Logical flag indicating whether the scale parameter
-\eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
+\eqn{\sigma} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 
 To obtain the coefficients, scale estimates and related quantities, use the
 generic accessor functions documented in \code{\link{mo.bqr.svy.methods}},

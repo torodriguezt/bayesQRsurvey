@@ -42,7 +42,8 @@
 #' Plot method for multiple-output Bayesian quantile regression fits
 #'
 #' @description
-#' Draws bivariate quantile regions from a fitted \code{mo.bqr.svy} object. The
+#' Draws quantile regions from a \code{mo.bqr.svy} model fitted with exactly two
+#' response variables. Models with other response dimensions cannot be plotted. The
 #' method projects the data onto a grid, determines which points lie inside each
 #' quantile region, and visualises the result using \pkg{ggplot2}.
 #'
@@ -75,7 +76,8 @@
 #'    \code{\link{mo.bqr.svy}}.
 #' @param y Ignored (S3 signature).
 #' @param response Optional character vector of length 2 giving the names of the
-#'    response columns to draw. Defaults to the responses used to fit the model.
+#'    fitted response columns, in the desired axis order. Defaults to the order
+#'    used to fit the model; the two names may be reversed.
 #' @param datafile Optional data frame containing at least the two columns named
 #'    in \code{response}. Defaults to the data stored in the fit.
 #' @param ngridpoints Integer; number of grid points per axis
@@ -179,14 +181,13 @@ plot.mo.bqr.svy <- function(x,
   # The fitted object carries the model frame, so neither the response names nor
   # the data have to be supplied again.
   Y <- as.matrix(stats::model.response(model$model))
+  if (ncol(Y) != 2L)
+    stop("Quantile region plots require a model fitted with exactly two response variables; ",
+         "this fit has ", ncol(Y), ".", call. = FALSE)
   if (is.null(colnames(Y)))
     colnames(Y) <- paste0("y", seq_len(ncol(Y)))
-  if (is.null(response)) {
-    if (ncol(Y) != 2L)
-      stop("Quantile regions are drawn for a bivariate response; this fit has ",
-           ncol(Y), ". Supply 'response' to choose two of them.", call. = FALSE)
-    response <- colnames(Y)
-  }
+  fitted_responses <- colnames(Y)
+  if (is.null(response)) response <- fitted_responses
   if (is.null(datafile))
     datafile <- as.data.frame(Y, stringsAsFactors = FALSE)
 
@@ -202,6 +203,11 @@ plot.mo.bqr.svy <- function(x,
   }
   if (!is.character(response) || length(response) != 2L)
     stop("'response' must be a character vector of length 2.", call. = FALSE)
+  if (anyNA(response) || anyDuplicated(response) ||
+      !setequal(response, fitted_responses))
+    stop("'response' must contain the two fitted response names, each exactly once: ",
+         paste(fitted_responses, collapse = ", "), ".", call. = FALSE)
+  response_order <- match(response, fitted_responses)
   if (!is.data.frame(datafile))
     stop("'datafile' must be a data frame.", call. = FALSE)
   miss <- setdiff(response, names(datafile))
@@ -224,6 +230,11 @@ plot.mo.bqr.svy <- function(x,
       orthBases[, k] <- gk
     }
   }
+
+  # Express both half-space normals and orthogonal bases in the displayed
+  # coordinate order. The fitted coefficients themselves do not change.
+  directions <- directions[response_order, , drop = FALSE]
+  orthBases <- orthBases[response_order, , drop = FALSE]
 
   taus  <- model$quantile
   ntaus <- length(taus)

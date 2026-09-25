@@ -75,9 +75,11 @@ if (!exists("%||%"))
 #' a directional approach. To improve computational efficiency, an Expectation-Maximization (EM)
 #' algorithm is implemented instead of the usual Markov Chain Monte Carlo (MCMC).
 #'
-#' @param formula a symbolic description of the model to be fit.
+#' @param formula a symbolic description of the model to be fit. Offset terms
+#'   are not supported.
 #' @param weights an optional numerical vector containing the survey weights. If \code{NULL}, equal weights are used.
 #' @param data an optional data frame containing the variables in the model.
+#'   Missing values must be removed or imputed before fitting.
 #' @param quantile numerical scalar or vector containing quantile(s) of interest (default=0.5).
 #' @param prior a \code{bqr_prior} object of class "prior". If omitted, a vague prior is assumed (see \code{\link{prior}}).
 #' @param U an optional \eqn{d \times K}-matrix of directions, where \eqn{d} indicates the response variable dimension
@@ -89,7 +91,7 @@ if (!exists("%||%"))
 #' @param max_iter numerical scalar indicating maximum number of EM iterations (default = 1000).
 #' @param verbose logical flag indicating whether to print progress messages (default=FALSE).
 #' @param estimate_sigma logical flag indicating whether to estimate the scale parameter
-#' when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)
+#' (default=FALSE, with \eqn{\sigma} fixed at 1).
 #' @param seed optional integer seed passed to \code{\link{set.seed}} before random
 #' directions are generated (only relevant when \code{n_dir} is used and \code{d > 1}).
 #' Has no effect when \code{U} is supplied explicitly.
@@ -119,7 +121,7 @@ if (!exists("%||%"))
 #'   \item{n_vars}{Number of covariates}
 #'   \item{response_dim}{Dimension of the response \eqn{d}}
 #'   \item{estimate_sigma}{Logical flag indicating whether the scale parameter
-#'                         \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
+#'                         \eqn{\sigma} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 #'
 #' To obtain the coefficients, scale estimates and related quantities, use the
 #' generic accessor functions documented in \code{\link{mo.bqr.svy.methods}},
@@ -207,7 +209,11 @@ mo.bqr.svy <- function(formula,
   quantile <- sort(unique(quantile))
 
   # --- model frame ---
-  mf <- model.frame(formula, data)
+  mf <- model.frame(formula, data, na.action = NULL)
+  if (length(attr(attr(mf, "terms"), "offset")))
+    stop("Formula offset terms are not supported.", call. = FALSE)
+  if (anyNA(mf))
+    stop("Data contains missing values; please remove or impute them.", call. = FALSE)
   y  <- model.response(mf)
   if (is.vector(y)) y <- matrix(y, ncol = 1)
   if (!is.matrix(y)) stop("'y' must be a numeric matrix or vector.")

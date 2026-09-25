@@ -30,7 +30,8 @@
 \item{y}{Ignored (S3 signature).}
 
 \item{response}{Optional character vector of length 2 giving the names of the
-response columns to draw. Defaults to the responses used to fit the model.}
+fitted response columns, in the desired axis order. Defaults to the order
+used to fit the model; the two names may be reversed.}
 
 \item{datafile}{Optional data frame containing at least the two columns named
 in \code{response}. Defaults to the data stored in the fit.}
@@ -81,7 +82,8 @@ Invisibly, a list with the components listed below.
 \code{max} and \code{tau}, one block per quantile level.}
 }
 \description{
-Draws bivariate quantile regions from a fitted \code{mo.bqr.svy} object. The
+Draws quantile regions from a \code{mo.bqr.svy} model fitted with exactly two
+response variables. Models with other response dimensions cannot be plotted. The
 method projects the data onto a grid, determines which points lie inside each
 quantile region, and visualises the result using \pkg{ggplot2}.
 
