@@ -45,21 +45,32 @@
 
 # Posterior draws for one quantile, as a matrix with named columns.
 #
-# The "ald" backend always returns a sigma column, which is a constant column of
-# ones when estimate_sigma = FALSE; it is dropped unless the fit actually
-# estimated it, or the caller asks for it explicitly.
+# Coefficients occupy the first p columns. The "ald" backend appends its scale
+# in column p + 1, which is constant when estimate_sigma = FALSE. A coefficient
+# may itself be named sigma, so the scale must never be selected by that name.
+.sigma_draw_name <- function(coef_names) {
+  make.unique(c(coef_names, "sigma"))[length(coef_names) + 1L]
+}
+
 .draws_for_tau <- function(x, tau = NULL, include_sigma = NULL) {
   i <- .tau_index(x, tau, single = TRUE)
 
   D <- as.matrix(x$draws[[i]])
   if (is.null(colnames(D)))
     colnames(D) <- paste0("V", seq_len(ncol(D)))
+  p <- nrow(x$beta)
+  if (ncol(D) < p)
+    stop("The draws do not contain all fitted coefficients.", call. = FALSE)
+  colnames(D)[seq_len(p)] <- rownames(x$beta)
+
+  has_sigma <- identical(x$method, "ald") && ncol(D) > p
+  if (has_sigma)
+    colnames(D)[p + 1L] <- .sigma_draw_name(rownames(x$beta))
 
   keep_sigma <- if (is.null(include_sigma)) isTRUE(x$estimate_sigma) else isTRUE(include_sigma)
-  if (!keep_sigma)
-    D <- D[, setdiff(colnames(D), "sigma"), drop = FALSE]
-
-  D
+  keep <- seq_len(p)
+  if (has_sigma && keep_sigma) keep <- c(keep, p + 1L)
+  D[, keep, drop = FALSE]
 }
 
 # Design matrix of a fit, rebuilt from the stored terms and model frame.
@@ -67,4 +78,6 @@
 # Both classes keep $terms and $model, so one helper serves them. Rebuilding
 # rather than storing X keeps the fitted object smaller and guarantees the
 # matrix always matches the terms actually used.
-.model_matrix <- function(x) stats::model.matrix(x$terms, x$model)
+.model_matrix <- function(x) {
+  stats::model.matrix(x$terms, x$model, contrasts.arg = x$contrasts)
+}

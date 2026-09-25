@@ -58,8 +58,8 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
     NULL
   }
 
-  make_block <- function(D, tau, tau_label) {
-    D <- if (is.data.frame(D)) data.matrix(D) else as.matrix(D)
+  make_block <- function(tau, tau_label) {
+    D <- .draws_for_tau(object, tau)
     storage.mode(D) <- "numeric"
     if (!nrow(D) || !ncol(D)) stop("Empty draws matrix.", call. = FALSE)
 
@@ -69,11 +69,7 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
       colnames(D) <- cn
     }
 
-    if (isTRUE(object$estimate_sigma)) {
-      keep_idx <- seq_len(ncol(D))
-    } else {
-      keep_idx <- which(cn != "sigma")
-    }
+    keep_idx <- seq_len(ncol(D))
     vars <- cn[keep_idx]
 
     means    <- colMeans(D[, keep_idx, drop = FALSE], na.rm = TRUE)
@@ -108,7 +104,7 @@ summary.bqr.svy <- function(object, probs = c(0.025, 0.975), digits = 3, ...) {
   }
 
   tau_labels <- .tau_labels(object)
-  per_tau <- Map(make_block, object$draws, object$quantile, tau_labels)
+  per_tau <- Map(make_block, object$quantile, tau_labels)
   names(per_tau) <- tau_labels
 
   res <- list(
@@ -434,13 +430,11 @@ print.bqr.svy <- function(x, digits = 3, ...) {
   beta_display <- x$beta
   sigma_estimated <- identical(x$method, "ald") && isTRUE(x$estimate_sigma)
   if (sigma_estimated) {
-    sig_vec <- vapply(x$draws, function(m) {
-      m <- as.matrix(m)
-      if ("sigma" %in% colnames(m)) mean(m[, "sigma"], na.rm = TRUE) else NA_real_
-    }, numeric(1))
+    sig_vec <- sigma.bqr.svy(x)
+    scale_name <- .sigma_draw_name(rownames(x$beta))
     beta_display <- rbind(
       beta_display,
-      matrix(sig_vec, nrow = 1, dimnames = list("sigma", colnames(beta_display)))
+      matrix(sig_vec, nrow = 1, dimnames = list(scale_name, colnames(beta_display)))
     )
   }
 
