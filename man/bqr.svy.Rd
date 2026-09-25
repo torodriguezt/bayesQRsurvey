@@ -20,7 +20,8 @@ bqr.svy(
 )
 }
 \arguments{
-\item{formula}{a symbolic description of the model to be fit.}
+\item{formula}{a symbolic description of the model to be fit. Offset terms
+are not supported.}
 
 \item{weights}{an optional numerical vector containing the survey weights. If \code{NULL}, equal weights are used.}
 
@@ -41,7 +42,7 @@ bqr.svy(
 \item{verbose}{logical flag indicating whether to print progress messages (default=TRUE).}
 
 \item{estimate_sigma}{logical flag indicating whether to estimate the scale parameter
-when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)}
+when method = "ald" (default=FALSE and \eqn{\sigma} is set to 1)}
 
 \item{pi_matrix}{an optional \eqn{n \times n} matrix of inclusion probabilities used only
 when \code{method = "approximate"}. The diagonal holds the first-order inclusion
@@ -58,7 +59,10 @@ named \code{"tau=0.100"}, \code{"tau=0.500"} and so on, also when a single
 quantile was fitted.
 \item{beta}{Matrix of posterior mean estimates of the regression coefficients,
 with one row per coefficient and one column per quantile.}
-\item{draws}{Named list of posterior draw matrices, one per quantile.}
+\item{draws}{Named list of posterior draw matrices, one per quantile. The
+first columns are the regression coefficients, followed by the ALD scale
+when applicable. Its column is named \code{sigma}, or a unique suffix such
+as \code{sigma.1} if that name is already a regression coefficient.}
 \item{diagnosis}{Named list of convergence diagnostics, one per quantile.}
 \item{accept_rate}{Named vector of average acceptance rates, one per quantile
 (\code{NA} for \code{method = "ald"}, which uses Gibbs sampling).}
@@ -73,7 +77,7 @@ matrix consistently from \code{newdata}.}
 \item{runtime}{Elapsed runtime in seconds.}
 \item{method}{Estimation method}
 \item{estimate_sigma}{Logical flag indicating whether the scale parameter
-\eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
+\eqn{\sigma} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 
 To obtain the coefficients, fitted values, covariance matrices and related
 quantities, use the generic accessor functions documented in

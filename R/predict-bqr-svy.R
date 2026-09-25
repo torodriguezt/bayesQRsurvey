@@ -11,37 +11,38 @@
 # draws, so the two agree in structure and differ only in where the replicates
 # come from.
 #
-# interval = "prediction" is deliberately absent, as it is in predict.rq: a
-# fitted quantile is one slice of the conditional distribution, and simulating a
-# new response would require the whole of it.
+# interval = "prediction" is deliberately absent: the intervals below concern
+# the estimated quantile function, not the variability of future responses.
 # ======================================================================
 
 #' Predicted quantiles from a fitted survey quantile regression
 #'
 #' Evaluates the estimated conditional quantile function
 #' \eqn{\hat{Q}_\tau(y \mid x) = x^\prime \bar{\beta}(\tau)} at new covariate
-#' values, optionally with a credible band.
+#' values, optionally with pointwise credible intervals.
 #'
-#' What is returned is the conditional quantile itself. With
-#' \code{tau = 0.9}, it is the value below which 90% of the responses fall
-#' among units sharing those covariates. It is a summary of the conditional
+#' What is returned is an estimate of the conditional quantile. With
+#' \code{tau = 0.9}, the fitted model estimates the value below which 90% of the
+#' responses fall among units sharing those covariates. It summarizes the conditional
 #' distribution, in the same sense that \code{\link[stats]{predict.lm}} returns
 #' the conditional mean, and not a draw of a new response.
 #'
-#' \code{interval = "credible"} adds a band obtained from the posterior draws.
+#' \code{interval = "credible"} adds equal-tailed, pointwise intervals obtained
+#' from the pseudo-posterior draws for each of the three estimation methods.
 #' Each draw of \eqn{\beta(\tau)} gives a draw of \eqn{x^\prime\beta(\tau)}, and
 #' \code{lower} and \code{higher} are the percentiles of those values at the
-#' requested \code{level}. It describes uncertainty
-#' about where the conditional quantile lies, and its width reflects only that;
-#' individual responses scatter much more widely around it.
+#' requested \code{level}. These intervals describe uncertainty about the
+#' conditional quantile under the working model. They are not simultaneous
+#' bands and do not describe the variability of individual responses. Nominal
+#' frequentist or sampling-design coverage is not guaranteed by the
+#' pseudo-posterior construction.
 #'
-#' There is no \code{interval = "prediction"}, following
-#' \code{\link[quantreg]{predict.rq}}. A prediction interval for a new
-#' observation requires the whole conditional distribution of the response,
-#' whereas a quantile regression estimates one slice of it. For
-#' \code{method = "ald"} the asymmetric Laplace working likelihood is formally a
-#' complete distribution, but its shape away from \eqn{\tau} is an artefact of
-#' the estimation device rather than a claim about the data.
+#' There is no \code{interval = "prediction"}. Lower and upper conditional
+#' quantiles can be used to estimate a prediction interval for a new response,
+#' but this method does not construct or calibrate such intervals and does not
+#' generate posterior predictive draws. For \code{method = "ald"}, the
+#' asymmetric Laplace distribution is used as a working likelihood; its shape
+#' away from \eqn{\tau} is not assumed to describe the response distribution.
 #'
 #' When several quantiles are requested, each was fitted separately and nothing
 #' constrains them to be ordered, so predicted quantiles may cross at some
@@ -53,8 +54,8 @@
 #' @param tau numeric vector of fitted quantiles to predict. \code{NULL}
 #'   (default) uses every quantile in the fit.
 #' @param interval \code{"none"} (default) for point predictions, or
-#'   \code{"credible"} to add a band from the posterior draws.
-#' @param level the credible level of the band.
+#'   \code{"credible"} to add pointwise intervals from the pseudo-posterior draws.
+#' @param level the credible level of each pointwise interval.
 #' @param na.action how to handle missing values in \code{newdata}.
 #' @param ... further arguments passed to or from other methods.
 #'

@@ -5,6 +5,7 @@
 \alias{coef.bqr.svy}
 \alias{fitted.bqr.svy}
 \alias{vcov.bqr.svy}
+\alias{print.bqr.svy.vcov}
 \alias{nobs.bqr.svy}
 \alias{as.matrix.bqr.svy}
 \alias{sigma.bqr.svy}
@@ -20,6 +21,8 @@
 \method{fitted}{bqr.svy}(object, tau = NULL, ...)
 
 \method{vcov}{bqr.svy}(object, tau = NULL, ...)
+
+\method{print}{bqr.svy.vcov}(x, digits = 4, ...)
 
 \method{nobs}{bqr.svy}(object, ...)
 
@@ -45,6 +48,9 @@ selects every quantile in the fit.}
 
 \item{...}{further arguments passed to or from other methods.}
 
+\item{digits}{integer; number of decimal places used when printing the
+covariance matrix returned by \code{vcov}. Default \code{4}.}
+
 \item{include_sigma}{logical; whether to keep the scale parameter column in
 the returned draws. Defaults to whether the model estimated it.}
 
@@ -53,9 +59,6 @@ the returned draws. Defaults to whether the model estimated it.}
 
 \item{evaluate}{logical; if \code{TRUE} (default) the updated call is
 evaluated and the new fit returned, otherwise the call itself is returned.}
-
-\item{digits}{integer; number of decimal places used when printing the
-covariance matrix returned by \code{vcov}. Default \code{4}.}
 }
 \value{
 \code{coef} and \code{fitted} return a vector for a single quantile,

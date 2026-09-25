@@ -54,7 +54,8 @@ if (!exists("%||%"))
 #' improve computational efficiency, the Markov Chain Monte Carlo (MCMC) algorithms
 #' are implemented in 'C++'.
 #'
-#' @param formula a symbolic description of the model to be fit.
+#' @param formula a symbolic description of the model to be fit. Offset terms
+#'   are not supported.
 #' @param weights an optional numerical vector containing the survey weights. If \code{NULL}, equal weights are used.
 #' @param data an optional data frame containing the variables in the model.
 #' @param quantile numerical scalar or vector containing quantile(s) of interest (default=0.5).
@@ -65,7 +66,7 @@ if (!exists("%||%"))
 #' @param thin thinning parameter, i.e., keep every keepth draw (default=1).
 #' @param verbose logical flag indicating whether to print progress messages (default=TRUE).
 #' @param estimate_sigma logical flag indicating whether to estimate the scale parameter
-#' when method = "ald" (default=FALSE and \eqn{\sigma^2} is set to 1)
+#' when method = "ald" (default=FALSE and \eqn{\sigma} is set to 1)
 #' @param pi_matrix an optional \eqn{n \times n} matrix of inclusion probabilities used only
 #' when \code{method = "approximate"}. The diagonal holds the first-order inclusion
 #' probabilities \eqn{\pi_i} and one triangle the second-order probabilities \eqn{\pi_{ij}}.
@@ -90,7 +91,10 @@ if (!exists("%||%"))
 #' quantile was fitted.
 #' \item{beta}{Matrix of posterior mean estimates of the regression coefficients,
 #'   with one row per coefficient and one column per quantile.}
-#' \item{draws}{Named list of posterior draw matrices, one per quantile.}
+#' \item{draws}{Named list of posterior draw matrices, one per quantile. The
+#'   first columns are the regression coefficients, followed by the ALD scale
+#'   when applicable. Its column is named \code{sigma}, or a unique suffix such
+#'   as \code{sigma.1} if that name is already a regression coefficient.}
 #' \item{diagnosis}{Named list of convergence diagnostics, one per quantile.}
 #' \item{accept_rate}{Named vector of average acceptance rates, one per quantile
 #'   (\code{NA} for \code{method = "ald"}, which uses Gibbs sampling).}
@@ -105,7 +109,7 @@ if (!exists("%||%"))
 #' \item{runtime}{Elapsed runtime in seconds.}
 #' \item{method}{Estimation method}
 #' \item{estimate_sigma}{Logical flag indicating whether the scale parameter
-#'   \eqn{\sigma^2} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
+#'   \eqn{\sigma} was estimated (\code{TRUE}) or fixed at 1 (\code{FALSE}).}
 #'
 #' To obtain the coefficients, fitted values, covariance matrices and related
 #' quantities, use the generic accessor functions documented in
@@ -197,6 +201,8 @@ bqr.svy <- function(formula,
 
   if (is.null(data)) data <- environment(formula)
   mf <- model.frame(formula, data, na.action = NULL)
+  if (length(attr(attr(mf, "terms"), "offset")))
+    stop("Formula offset terms are not supported.", call. = FALSE)
   if (anyNA(mf))
     stop("Data contains missing values; please remove or impute them.", call. = FALSE)
 
@@ -226,6 +232,8 @@ bqr.svy <- function(formula,
       stop("Length of 'weights' != length of response.", call. = FALSE)
     w_val
   }
+  if (any(!is.finite(w)) || any(w <= 0))
+    stop("'weights' must contain only finite, strictly positive values.", call. = FALSE)
 
   p <- ncol(X)
 
@@ -302,7 +310,7 @@ bqr.svy <- function(formula,
                             thin           = thin,
                             b_prior_mean   = pri$b0,
                             B_prior_prec   = solve(pri$B0),
-                            fix_sigma      = 1,  # sigma^2 held fixed at 1
+                            fix_sigma      = 1,  # sigma held fixed at 1
                             print_progress = print_progress
                           )
                         }
@@ -352,6 +360,8 @@ bqr.svy <- function(formula,
     if (ncol(draws_i) >= p) {
       if (is.null(colnames(draws_i))) colnames(draws_i) <- paste0("V", seq_len(ncol(draws_i)))
       colnames(draws_i)[1:p] <- coef_names
+      if (identical(method, "ald") && ncol(draws_i) > p)
+        colnames(draws_i)[p + 1L] <- .sigma_draw_name(coef_names)
     } else if (is.null(colnames(draws_i))) {
       colnames(draws_i) <- paste0("V", seq_len(ncol(draws_i)))
     }
@@ -370,9 +380,7 @@ bqr.svy <- function(formula,
   report_sigma <- identical(method, "ald") && isTRUE(estimate_sigma)
   compute_diagnosis <- function(D) {
     D <- as.matrix(D)
-    if (!report_sigma && "sigma" %in% colnames(D)) {
-      D <- D[, colnames(D) != "sigma", drop = FALSE]
-    }
+    if (!report_sigma) D <- D[, seq_len(p), drop = FALSE]
     s <- posterior::summarize_draws(
       D,
       "rhat", "ess_bulk", "ess_tail"

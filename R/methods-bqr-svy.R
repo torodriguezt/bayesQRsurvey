@@ -136,6 +136,7 @@ vcov.bqr.svy <- function(object, tau = NULL, ...) {
   if (length(out) == 1L) out[[1L]] else out
 }
 
+#' @rdname bqr.svy.methods
 #' @exportS3Method print bqr.svy.vcov
 print.bqr.svy.vcov <- function(x, digits = 4, ...) {
   V <- unclass(x)
@@ -171,7 +172,8 @@ sigma.bqr.svy <- function(object, tau = NULL, ...) {
   } else {
     vapply(object$draws[idx], function(m) {
       m <- as.matrix(m)
-      if ("sigma" %in% colnames(m)) mean(m[, "sigma"], na.rm = TRUE) else NA_real_
+      p <- nrow(object$beta)
+      if (ncol(m) > p) mean(m[, p + 1L], na.rm = TRUE) else NA_real_
     }, numeric(1))
   }
 
