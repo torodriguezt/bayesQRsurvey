@@ -39,8 +39,8 @@ test_that("the fitted curve drawn by plot() is predict() over the same grid", {
     # the curve is the conditional quantile at the posterior mean, x' beta_bar
     expect_equal(unname(rows$y), unname(pr[, "fit"]))
     # and the band is the same row quantiles of the draws
-    expect_equal(unname(rows$y_lower), unname(pr[, "lower"]))
-    expect_equal(unname(rows$y_upper), unname(pr[, "higher"]))
+    expect_equal(unname(rows$y_lower), unname(pr[, "lwr"]))
+    expect_equal(unname(rows$y_upper), unname(pr[, "upr"]))
   }
 })
 

@@ -279,19 +279,19 @@ test_that("the credible band brackets the fit and agrees with the draws", {
   nd  <- data.frame(x1 = c(-0.5, 0.5), x2 = 0)
 
   ci <- predict(fit, nd, tau = 0.5, interval = "credible")
-  expect_equal(colnames(ci), c("fit", "lower", "higher"))
-  expect_true(all(ci[, "lower"] <= ci[, "fit"]))
-  expect_true(all(ci[, "fit"]   <= ci[, "higher"]))
+  expect_equal(colnames(ci), c("fit", "lwr", "upr"))
+  expect_true(all(ci[, "lwr"] <= ci[, "fit"]))
+  expect_true(all(ci[, "fit"] <= ci[, "upr"]))
 
   # a wider level gives a wider band
   wide <- predict(fit, nd, tau = 0.5, interval = "credible", level = 0.99)
-  expect_true(all(wide[, "higher"] - wide[, "lower"] >=
-                  ci[, "higher"] - ci[, "lower"]))
+  expect_true(all(wide[, "upr"] - wide[, "lwr"] >=
+                  ci[, "upr"] - ci[, "lwr"]))
 
   # the band is exactly the row quantiles of X %*% t(draws)
   X  <- cbind(1, nd$x1, nd$x2)
   XB <- X %*% t(as.matrix(fit, tau = 0.5))
-  expect_equal(unname(ci[, "lower"]),
+  expect_equal(unname(ci[, "lwr"]),
                unname(apply(XB, 1, quantile, probs = 0.025)))
 
   expect_error(predict(fit, nd, interval = "prediction"), "arg")
@@ -350,6 +350,6 @@ test_that("predict accepts character columns for variables fitted as factors", {
   expect_equal(unname(one), unname(cf[["(Intercept)"]] + cf[["gb"]]))
 
   ci <- predict(fit, chr, tau = 0.5, interval = "credible")
-  expect_equal(colnames(ci), c("fit", "lower", "higher"))
+  expect_equal(colnames(ci), c("fit", "lwr", "upr"))
   expect_true(all(is.finite(ci)))
 })
