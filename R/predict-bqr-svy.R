@@ -30,7 +30,7 @@
 #' \code{interval = "credible"} adds equal-tailed, pointwise intervals obtained
 #' from the pseudo-posterior draws for each of the three estimation methods.
 #' Each draw of \eqn{\beta(\tau)} gives a draw of \eqn{x^\prime\beta(\tau)}, and
-#' \code{lower} and \code{higher} are the percentiles of those values at the
+#' \code{lwr} and \code{upr} are the percentiles of those values at the
 #' requested \code{level}. These intervals describe uncertainty about the
 #' conditional quantile under the working model. They are not simultaneous
 #' bands and do not describe the variability of individual responses. Nominal
@@ -62,8 +62,8 @@
 #' @return With \code{interval = "none"}, a vector for a single quantile and a
 #'   matrix with one column per quantile otherwise. With
 #'   \code{interval = "credible"}, a matrix with columns \code{fit},
-#'   \code{lower} and \code{higher} for a single quantile, and a named list of
-#'   such matrices otherwise.
+#'   \code{lwr} and \code{upr}, as in \code{\link[stats]{predict.lm}}, for a
+#'   single quantile, and a named list of such matrices otherwise.
 #'
 #' @seealso \code{\link{bqr.svy.methods}},
 #'   \code{\link[=posterior_interval.bqr.svy]{posterior_interval}},
@@ -126,7 +126,8 @@ predict.bqr.svy <- function(object, newdata, tau = NULL,
     XB <- X %*% t(D[, rownames(B), drop = FALSE])
     band <- t(apply(XB, 1, stats::quantile, probs = probs, na.rm = TRUE))
     out <- cbind(fit, band)
-    colnames(out) <- c("fit", "lower", "higher")
+    # predict.lm()'s column names (predict.rq() uses fit/lower/higher)
+    colnames(out) <- c("fit", "lwr", "upr")
     out
   }
 
