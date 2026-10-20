@@ -165,6 +165,8 @@ draws <- as.matrix(fit_ald, tau = 0.5)
 dim(draws)
 head(draws, 3)
 
+posterior_interval(fit_ald, tau = 0.5)
+
 ## Prediction: the conditional quantiles for a two-year-old boy and girl.
 
 nd <- data.frame(age = 2, sex = c("Boys", "Girls"))
