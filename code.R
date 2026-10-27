@@ -4,13 +4,13 @@
 ## Reproduces every figure, output and table in the manuscript.
 ## Figures are written to ./Figures. Runtime: about two minutes.
 
-## Installation. The results below were produced with bayesQRsurvey 0.4.1,
+## Installation. The results below were produced with bayesQRsurvey 0.4.2,
 ## which is not on CRAN yet (CRAN currently serves 0.3.1). Install it from
-## GitHub; once 0.4.1 reaches CRAN, replace these two lines with
+## GitHub; once 0.4.2 reaches CRAN, replace these two lines with
 ##   install.packages("bayesQRsurvey", repos = "https://cloud.r-project.org")
 
 if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
-remotes::install_github("torodriguezt/bayesQRsurvey@v0.4.1")
+remotes::install_github("torodriguezt/bayesQRsurvey@v0.4.2")
 
 library("bayesQRsurvey")
 library("ggplot2")
