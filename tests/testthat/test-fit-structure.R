@@ -92,6 +92,7 @@ test_that("niter, burnin and thin control the number of retained draws", {
     expect_equal(run(m, 1000, 200, 1),  800, info = m)
     expect_equal(run(m, 1000, 200, 2),  400, info = m)
     expect_equal(run(m, 1000,   0, 5),  200, info = m)
+    expect_equal(run(m, 1000, 200, 3),  267, info = m)  # 800 / 3 rounds up
   }
 })
 
