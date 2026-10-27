@@ -151,7 +151,7 @@ Rcpp::List _bwqr_weighted_em_cpp_sep(
         }
         term1 /= (2.0 * delta2);
         term2 /= (2.0 * delta2);
-        const double denom = (3.0 * n + a0 + 1.0) / 2.0;
+        const double denom = (3.0 * n + 2.0 * a0 + 2.0) / 2.0;
 
         sigma_curr(k) = (term1 + term2 + term3 + b0) / denom;
         if (!std::isfinite(sigma_curr(k)))
