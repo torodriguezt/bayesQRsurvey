@@ -173,7 +173,7 @@ Rcpp::List _mcmc_bwqr_ap_cpp(const arma::vec& y,
   arma::mat I_p = arma::eye<mat>(p, p);
   arma::mat L_prop_base = arma::solve(arma::trimatu(L_A.t()), I_p, arma::solve_opts::fast);
 
-  const int n_keep = (n_mcmc - burnin) / thin;
+  const int n_keep = (n_mcmc - burnin + thin - 1) / thin;
   arma::mat beta_out((n_keep > 0 ? n_keep : 0), p, fill::none);
   int accept = 0, k_out = 0;
 
