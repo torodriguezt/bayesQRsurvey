@@ -22,13 +22,16 @@
 
 test_that("reversing responses transposes the full fitted geometry", {
   obj <- .mo_region_fixture()
-  old_y1 <- seq(-2, 4, length.out = 41)
-  old_y2 <- seq(6, 14, length.out = 41)
+  old_y1 <- seq(-2.1, 4.1, length.out = 41)
+  old_y2 <- seq(5.9, 14.1, length.out = 41)
 
   # Independent analytic membership for the known parallelogram.
   grid <- expand.grid(y1 = old_y1, y2 = old_y2)
   z1 <- grid$y1 - 0.2 * grid$y2
   z2 <- grid$y2 - 0.3 * grid$y1
+  # No grid point lies on an edge: whether such a point counts as inside
+  # depends on how the BLAS rounds the half-space products, not on the region.
+  expect_gt(min(abs(c(z1 + 3, z1, z2 - 8, z2 - 12))), 1e-6)
   inside <- grid[z1 >= -3 & z1 <= 0 & z2 >= 8 & z2 <= 12, ]
 
   check_slices <- function(result, first, second) {
@@ -41,9 +44,9 @@ test_that("reversing responses transposes the full fitted geometry", {
   }
 
   original <- plot(obj, ngridpoints = 41,
-                    range_y = rbind(c(-2, 4), c(6, 14)))
+                    range_y = rbind(c(-2.1, 4.1), c(5.9, 14.1)))
   reversed <- plot(obj, response = c("y2", "y1"), ngridpoints = 41,
-                    range_y = rbind(c(6, 14), c(-2, 4)))
+                    range_y = rbind(c(5.9, 14.1), c(-2.1, 4.1)))
   expect_s3_class(original$plot, "ggplot")
   expect_s3_class(reversed$plot, "ggplot")
   check_slices(original, inside$y1, inside$y2)
