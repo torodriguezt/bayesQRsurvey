@@ -167,12 +167,6 @@ head(draws, 3)
 
 posterior_interval(fit_ald, tau = 0.5)
 
-## Prediction: the conditional quantiles for a two-year-old boy and girl.
-
-nd <- data.frame(age = 2, sex = c("Boys", "Girls"))
-predict(fit_ald, newdata = nd)
-predict(fit_ald, newdata = nd, tau = 0.9, interval = "credible")
-
 ## The same model under the two remaining methods.
 
 set.seed(50)
