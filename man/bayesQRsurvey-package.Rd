@@ -31,7 +31,6 @@ models using an EM algorithm.
 \describe{
 \item{\code{\link[=summary.bqr.svy]{summary}}}{Posterior summaries for \code{bqr.svy} and \code{mo.bqr.svy} objects}
 \item{\code{\link[=plot.bqr.svy]{plot}}}{Plot methods for \code{bqr.svy} and \code{mo.bqr.svy} objects}
-\item{\code{\link[=predict.bqr.svy]{predict}}}{Predictions at new covariate values}
 \item{\code{\link{diagnostics}}}{MCMC and EM convergence diagnostics}
 \item{\code{\link[=bqr.svy.posterior]{posterior_interval}}}{Posterior credible intervals}
 \item{\code{\link[=bqr.svy.methods]{bqr.svy methods}}}{Generic accessors for \code{bqr.svy} fits: \code{coef}, \code{vcov}, \code{fitted}, \code{sigma}, \code{nobs}, \code{formula}, \code{terms}, \code{model.matrix}, \code{weights}, \code{as.matrix} and \code{update}}

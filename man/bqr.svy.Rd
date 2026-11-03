@@ -72,8 +72,7 @@ as \code{sigma.1} if that name is already a regression coefficient.}
 \item{prior}{Prior specification used.}
 \item{call, formula, terms, model}{Model specification details.}
 \item{xlevels, contrasts}{Factor levels and contrasts of the model frame,
-used by \code{\link[=predict.bqr.svy]{predict}} to rebuild the design
-matrix consistently from \code{newdata}.}
+kept so that the design matrix can be rebuilt consistently from new data.}
 \item{runtime}{Elapsed runtime in seconds.}
 \item{method}{Estimation method}
 \item{estimate_sigma}{Logical flag indicating whether the scale parameter

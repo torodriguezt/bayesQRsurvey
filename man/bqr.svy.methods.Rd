@@ -134,8 +134,6 @@ mean(draws[, "x1"] > 0)                       # P(beta_x1 > 0)
 }
 \seealso{
 \code{\link{bqr.svy}}, \code{\link{bqr.svy.posterior}} for the
-posterior draws and credible intervals,
-\code{\link[=predict.bqr.svy]{predict}} for the conditional quantile at
-new covariate values, \code{\link{diagnostics}},
+posterior draws and credible intervals, \code{\link{diagnostics}},
 \code{\link[=summary.bqr.svy]{summary}}
 }
