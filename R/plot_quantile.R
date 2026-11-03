@@ -290,7 +290,7 @@ plot.bqr.svy <- function(
 
         xg <- newdata[[predictor]]
         # the curve is the conditional quantile at the posterior mean, x' beta_bar,
-        # so it is exactly what fitted() and predict() return over this grid
+        # the same quantity fitted() returns at the observed covariates
         qfit <- drop(Xg %*% colMeans(Dk))
 
         df <- data.frame(
@@ -647,7 +647,7 @@ plot.bqr.svy <- function(
 
     for (k in seq_along(tau)) {
       preds_k <- preds_list[[k]]
-      # x' beta_bar, the same curve fitted() and predict() return
+      # x' beta_bar, the same quantity fitted() returns
       y_fit <- rowMeans(preds_k)
       graphics::lines(xg, y_fit, col = cols[k], lwd = line_size)
     }
