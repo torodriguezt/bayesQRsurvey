@@ -5,7 +5,7 @@
 #' @useDynLib bayesQRsurvey, .registration = TRUE
 #' @import Rcpp
 #'
-#' @importFrom stats acf mad median predict qnorm quantile rnorm runif sd var setNames
+#' @importFrom stats acf mad median qnorm quantile rnorm runif sd var setNames
 #' @importFrom stats delete.response model.frame model.matrix model.response terms coef weights
 #' @importFrom graphics plot lines points axis legend arrows grid mtext par segments
 #' @importFrom methods setClass setMethod new is
