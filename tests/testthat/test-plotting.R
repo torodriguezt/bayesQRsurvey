@@ -15,7 +15,7 @@ test_that("plot.bqr.svy returns a ggplot object", {
 })
 
 
-test_that("the fitted curve drawn by plot() is predict() over the same grid", {
+test_that("the fitted curve drawn by plot() is x' beta_bar over the same grid", {
   set.seed(2718)
   n <- 120
   d <- data.frame(x1 = runif(n, -1, 1), g = factor(sample(c("a", "b"), n, TRUE)),
@@ -34,13 +34,15 @@ test_that("the fitted curve drawn by plot() is predict() over the same grid", {
 
   for (tt in c(0.25, 0.75)) {
     rows <- pd[pd$tau_numeric == tt, ]
-    nd   <- data.frame(x1 = rows$x, g = factor("b", levels = levels(d$g)))
-    pr   <- predict(fit, nd, tau = tt, interval = "credible")
+    # the design matrix of the grid at g = "b": (Intercept), x1, I(x1^2), gb
+    X    <- cbind(1, rows$x, rows$x^2, 1)
+    XB   <- X %*% t(as.matrix(fit, tau = tt))
+    band <- t(apply(XB, 1, quantile, probs = c(0.025, 0.975)))
     # the curve is the conditional quantile at the posterior mean, x' beta_bar
-    expect_equal(unname(rows$y), unname(pr[, "fit"]))
-    # and the band is the same row quantiles of the draws
-    expect_equal(unname(rows$y_lower), unname(pr[, "lwr"]))
-    expect_equal(unname(rows$y_upper), unname(pr[, "upr"]))
+    expect_equal(unname(rows$y), unname(drop(X %*% coef(fit, tau = tt))))
+    # and the band is the row quantiles of x' beta over the draws
+    expect_equal(unname(rows$y_lower), unname(band[, 1]))
+    expect_equal(unname(rows$y_upper), unname(band[, 2]))
   }
 })
 

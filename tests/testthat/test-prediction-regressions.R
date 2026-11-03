@@ -35,11 +35,7 @@ test_that("a coefficient named sigma remains distinct from the ALD scale", {
       expect_equal(unname(posterior_interval(fit, tau = tau)),
                    unname(posterior_interval(reference, tau = tau)))
       expect_equal(sigma(fit, tau), sigma(reference, tau))
-
-      nd <- data.frame(sigma = c(-0.5, 0.5), sigma.1 = 0)
-      ref_nd <- data.frame(x = nd$sigma, z = nd$sigma.1)
-      expect_equal(predict(fit, nd, tau = tau, interval = "credible"),
-                   predict(reference, ref_nd, tau = tau, interval = "credible"))
+      expect_equal(fitted(fit, tau), fitted(reference, tau))
 
       all_D <- as.matrix(fit, tau = tau, include_sigma = TRUE)
       expect_identical(anyDuplicated(colnames(all_D)), 0L)
@@ -85,15 +81,13 @@ test_that("stored contrasts govern fitted values and plotting after options chan
     fit <- suppressWarnings(do.call(bqr.svy, c(list(
       formula = y ~ g + x, data = d, weights = d$w,
       quantile = 0.5, niter = 500, burnin = 100, verbose = FALSE), args)))
-    expected <- predict(fit, interval = "credible")
+    expected <- fitted(fit)
     expected_X <- model.matrix(fit)
     curve <- plot(fit, type = "fit", which = "x", at = list(g = "b"))
 
     options(contrasts = c("contr.helmert", "contr.poly"))
     expect_equal(model.matrix(fit), expected_X)
-    expect_equal(fitted(fit), expected[, "fit"])
-    expect_equal(predict(fit, interval = "credible"), expected)
-    expect_equal(predict(fit, newdata = d, interval = "credible"), expected)
+    expect_equal(fitted(fit), expected)
     expect_equal(plot(fit, type = "fit", which = "x", at = list(g = "b"))$data,
                  curve$data)
   }

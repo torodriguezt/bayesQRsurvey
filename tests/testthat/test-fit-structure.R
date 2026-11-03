@@ -59,7 +59,7 @@ test_that("the fit carries the xlevels and contrasts of the model frame", {
             niter = 500, burnin = 100, verbose = FALSE)
   )
 
-  # predict() needs both to rebuild the design matrix of newdata
+  # kept so that the design matrix can be rebuilt consistently from new data
   expect_equal(fit$xlevels, list(g = c("a", "b", "c")))
   expect_equal(fit$contrasts, list(g = "contr.treatment"))
 })
