@@ -195,10 +195,7 @@ head(model.matrix(fit_ald), 3)
 myprior <- prior(beta_x_mean = rep(0, 4), beta_x_cov = 25)
 
 set.seed(50)
-fit_ald_prior <- bqr.svy(wgt ~ age + I(age^2) + sex, weights = dweight,
-                         data = Anthro, quantile = c(0.1, 0.5, 0.9),
-                         niter = 20000, burnin = 10000, thin = 1,
-                         prior = myprior, verbose = FALSE)
+fit_ald_prior <- update(fit_ald, prior = myprior)
 
 
 ## Section 4.2: Example 2, multiple-output.
