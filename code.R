@@ -220,8 +220,8 @@ coef(fit_mo, tau = 0.05, direction = 1)
 
 ## Figure 5: nested quantile regions for a two-year-old boy.
 
-plot(fit_mo, xValue = c(1, 2, 4, 0),
-     ngridpoints = 450, paintedArea = FALSE,
+plot(fit_mo, x_value = c(1, 2, 4, 0),
+     grid_length = 450, painted_area = FALSE,
      color_palette = "grey", theme_style = "none")
 
 ggsave(file.path(OUT, "plotQuantileRegion1.pdf"), width = 6.5, height = 5.5)
