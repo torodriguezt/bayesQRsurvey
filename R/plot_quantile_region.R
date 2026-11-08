@@ -4,9 +4,9 @@
 #' @keywords internal
 #' @noRd
 .checkPoints_R <- function(seqY1, seqY2, directions, orthBases,
-                           betas, xValue) {
+                           betas, x_value) {
   n_dirs <- ncol(directions)
-  p      <- length(xValue)
+  p      <- length(x_value)
 
   a_list <- matrix(0, nrow = 2, ncol = n_dirs)
   b_vals <- numeric(n_dirs)
@@ -16,7 +16,7 @@
     v    <- orthBases[, d]
     beta <- betas[, d]
     a_list[, d] <- u - beta[p + 1] * v
-    b_vals[d]   <- sum(xValue * beta[seq_len(p)])
+    b_vals[d]   <- sum(x_value * beta[seq_len(p)])
   }
 
   grid  <- expand.grid(y1 = seqY1, y2 = seqY2)
@@ -47,19 +47,17 @@
 #' method projects the data onto a grid, determines which points lie inside each
 #' quantile region, and visualises the result using \pkg{ggplot2}.
 #'
-#' The response names and the data are taken from the fitted object, so neither
-#' has to be supplied again; \code{response} and \code{datafile} are only needed
-#' to override them. A quantile region is conditional on the covariates, so
-#' \code{xValue} must give the covariate profile at which to draw it, one value
-#' per design-matrix column.
+#' The response names and the data are taken from the fitted object. A quantile
+#' region is conditional on the covariates, so \code{x_value} must give the
+#' covariate profile at which to draw it, one value per design-matrix column.
 #'
 #' @details
 #' Two display modes are available.
 #' \itemize{
-#'    \item \code{paintedArea = TRUE} (default) draws filled regions with
+#'    \item \code{painted_area = TRUE} (default) draws filled regions with
 #'          contour outlines, one per quantile magnitude, from the outermost
 #'          (smallest \eqn{\tau}) to the innermost.
-#'    \item \code{paintedArea = FALSE} draws contour lines only, distinguished
+#'    \item \code{painted_area = FALSE} draws contour lines only, distinguished
 #'          by colour and linetype.
 #' }
 #' In both modes the quantile levels are identified through a standard
@@ -74,18 +72,15 @@
 #'
 #' @param x An object of class \code{"mo.bqr.svy"} produced by
 #'    \code{\link{mo.bqr.svy}}.
-#' @param y Ignored (S3 signature).
 #' @param response Optional character vector of length 2 giving the names of the
 #'    fitted response columns, in the desired axis order. Defaults to the order
 #'    used to fit the model; the two names may be reversed.
-#' @param datafile Optional data frame containing at least the two columns named
-#'    in \code{response}. Defaults to the data stored in the fit.
-#' @param ngridpoints Integer; number of grid points per axis
+#' @param grid_length Integer; number of grid points per axis
 #'    (default = 200).
-#' @param xValue Numeric vector of covariate values at which to evaluate the
+#' @param x_value Numeric vector of covariate values at which to evaluate the
 #'    regression, one per design-matrix column and in that order. For an
-#'    intercept-only model use \code{xValue = 1} (the default).
-#' @param paintedArea Logical; if \code{TRUE} (default) the regions are
+#'    intercept-only model use \code{x_value = 1} (the default).
+#' @param painted_area Logical; if \code{TRUE} (default) the regions are
 #'    drawn as filled ribbons (see Details).
 #' @param range_y An optional \eqn{2 \times 2} matrix whose rows give
 #'    the \code{[min, max]} range for the first and second response,
@@ -99,19 +94,10 @@
 #' @param theme_style One of \code{"minimal"} (a clean built-in preset) or
 #'   \code{"none"}, which applies no theme so the plot honours the active
 #'   \code{theme_set()}.
-#' @param point_alpha Numeric in \code{[0, 1]}; transparency for the
-#'    observed-data point cloud (default = 0.3).
-#' @param point_size Numeric; size of the data points (default = 1.2).
-#' @param line_size Numeric; line width for contour outlines
-#'    (default = 0.8).
-#' @param verbose Logical; if \code{TRUE}, print per-quantile progress
-#'    messages (default = \code{FALSE}).
-#' @param ... Not used.
+#' @param ... not used; any argument passed here is an error.
 #'
-#' @return Invisibly, a list with the components listed below.
-#'    \item{plot}{A \code{ggplot} object.}
-#'    \item{data}{A data frame with columns \code{y1}, \code{min},
-#'      \code{max} and \code{tau}, one block per quantile level.}
+#' @return A ggplot object. If no quantile region can be computed, a warning is
+#'    given and \code{NULL} is returned invisibly.
 #'
 #' @examples
 #' \donttest{
@@ -138,11 +124,11 @@
 #'
 #' # --- Plot quantile regions (filled ribbons) ---
 #' # the responses and the data come from the fit; the model is intercept-only,
-#' # so the default xValue = 1 is the right covariate profile
+#' # so the default x_value = 1 is the right covariate profile
 #' plot(fit)
 #'
 #' # Contour-only style
-#' plot(fit, paintedArea = FALSE)
+#' plot(fit, painted_area = FALSE)
 #' }
 #'
 #' @seealso \code{\link{mo.bqr.svy}}, \code{\link{mo.bqr.svy.methods}},
@@ -157,29 +143,26 @@
 #' @method plot mo.bqr.svy
 #' @export
 plot.mo.bqr.svy <- function(x,
-                               y             = NULL,
-                               response      = NULL,
-                               datafile      = NULL,
-                               ngridpoints   = 200,
-                               xValue        = 1,
-                               paintedArea   = TRUE,
-                               range_y       = NULL,
-                               main          = NULL,
-                               color_palette = c("default", "grey"),
-                               theme_style   = c("minimal", "none"),
-                               point_alpha   = 0.3,
-                               point_size    = 1.2,
-                               line_size     = 0.8,
-                               verbose       = FALSE,
-                               ...) {
+                            response      = NULL,
+                            grid_length   = 200,
+                            x_value       = 1,
+                            painted_area  = TRUE,
+                            range_y       = NULL,
+                            main          = NULL,
+                            color_palette = c("default", "grey"),
+                            theme_style   = c("minimal", "none"),
+                            ...) {
 
+  .stop_on_dots(match.call(expand.dots = FALSE)$...,
+                renamed = c(xValue = "x_value", paintedArea = "painted_area",
+                            ngridpoints = "grid_length"))
   color_palette <- match.arg(color_palette)
   theme_style   <- match.arg(theme_style)
   model <- x
 
   # --- Defaults taken from the fit ------------------------------------
-  # The fitted object carries the model frame, so neither the response names nor
-  # the data have to be supplied again.
+  # The fitted object carries the model frame, so the response names and the
+  # data come from it.
   Y <- as.matrix(stats::model.response(model$model))
   if (ncol(Y) != 2L)
     stop("Quantile region plots require a model fitted with exactly two response variables; ",
@@ -188,18 +171,16 @@ plot.mo.bqr.svy <- function(x,
     colnames(Y) <- paste0("y", seq_len(ncol(Y)))
   fitted_responses <- colnames(Y)
   if (is.null(response)) response <- fitted_responses
-  if (is.null(datafile))
-    datafile <- as.data.frame(Y, stringsAsFactors = FALSE)
 
   # --- Validate inputs ------------------------------------------------
-  # A quantile region is conditional on the covariates, so xValue must give one
+  # A quantile region is conditional on the covariates, so x_value must give one
   # value per design-matrix column. Without this check a mismatched length
   # silently yields an empty region and no plot.
-  if (!is.numeric(xValue) || length(xValue) != model$n_vars) {
+  if (!is.numeric(x_value) || length(x_value) != model$n_vars) {
     nms <- utils::head(rownames(model$coefficients[[1L]]), model$n_vars)
-    stop("'xValue' must give one value per covariate: ", model$n_vars,
+    stop("'x_value' must give one value per covariate: ", model$n_vars,
          " expected (", paste(nms, collapse = ", "), "), ",
-         length(xValue), " supplied.", call. = FALSE)
+         length(x_value), " supplied.", call. = FALSE)
   }
   if (!is.character(response) || length(response) != 2L)
     stop("'response' must be a character vector of length 2.", call. = FALSE)
@@ -208,12 +189,6 @@ plot.mo.bqr.svy <- function(x,
     stop("'response' must contain the two fitted response names, each exactly once: ",
          paste(fitted_responses, collapse = ", "), ".", call. = FALSE)
   response_order <- match(response, fitted_responses)
-  if (!is.data.frame(datafile))
-    stop("'datafile' must be a data frame.", call. = FALSE)
-  miss <- setdiff(response, names(datafile))
-  if (length(miss))
-    stop(sprintf("Column(s) %s not found in 'datafile'.",
-                 paste0("'", miss, "'", collapse = ", ")), call. = FALSE)
 
 
   # --- Extract model components ---------------------------------------
@@ -244,7 +219,7 @@ plot.mo.bqr.svy <- function(x,
   })
 
   # --- Observed response matrix (complete cases) ----------------------
-  Y <- datafile[, response, drop = FALSE]
+  Y <- as.data.frame(Y, stringsAsFactors = FALSE)[, response, drop = FALSE]
   Y <- Y[stats::complete.cases(Y), , drop = FALSE]
 
   if (is.null(range_y)) {
@@ -257,21 +232,17 @@ plot.mo.bqr.svy <- function(x,
     y2range <- range_y[2, ]
   }
 
-  seqY1 <- seq(y1range[1], y1range[2], length.out = ngridpoints)
-  seqY2 <- seq(y2range[1], y2range[2], length.out = ngridpoints)
+  seqY1 <- seq(y1range[1], y1range[2], length.out = grid_length)
+  seqY2 <- seq(y2range[1], y2range[2], length.out = grid_length)
 
   # --- Compute regions per tau ----------------------------------------
   regions <- list()
   for (idx in seq_len(ntaus)) {
     betas_mat <- betaDifDirections[[idx]]
-    if (any(is.na(betas_mat))) {
-      if (verbose)
-        message(sprintf("  tau = %.2f: skipped (NA coefficients)", taus[idx]))
-      next
-    }
+    if (any(is.na(betas_mat))) next
 
     cp <- .checkPoints_R(seqY1, seqY2, directions, orthBases,
-                         betas_mat, xValue)
+                         betas_mat, x_value)
 
     if (nrow(cp) > 0L) {
       y1_in  <- sort(unique(cp[, 1]))
@@ -282,12 +253,6 @@ plot.mo.bqr.svy <- function(x,
       regions[[as.character(taus[idx])]] <- data.frame(
         y1 = y1_in, min = y2_min, max = y2_max, tau = taus[idx]
       )
-      if (verbose)
-        message(sprintf("  tau = %.2f: %d grid slices", taus[idx],
-                        length(y1_in)))
-    } else {
-      if (verbose)
-        message(sprintf("  tau = %.2f: empty region", taus[idx]))
     }
   }
 
@@ -304,11 +269,11 @@ plot.mo.bqr.svy <- function(x,
   full_palette <- c("#00E5FF", "#FF1744", "#76FF03", "#FFEA00",
                     "#D500F9", "#FF9100", "#69F0AE", "#448AFF")
   pt_col       <- "grey50"   # same observation grey as plot.bqr.svy
-  pt_alpha_m   <- 0.6
-  pt_size_m    <- 0.8
+  pt_alpha     <- 0.18
+  pt_size      <- 0.96
+  line_width   <- 1.04
   border_dark  <- 0.85
   ribbon_alpha <- 0.35
-  lw_mult      <- 1.3
   # theme_style = "none" applies no theme, so the plot honours the active
   # theme_set() (as in plot.bqr.svy); otherwise a clean minimal preset is used.
   refined_theme <- if (identical(theme_style, "none")) {
@@ -351,7 +316,7 @@ plot.mo.bqr.svy <- function(x,
                                     formatC(taus_order, format = "f", digits = 2),
                                     "'"))
 
-  if (isTRUE(paintedArea)) {
+  if (isTRUE(painted_area)) {
     # --- Painted-area style -------------------------------------------
     # Regions are drawn in ascending tau order, so the larger (outer) region
     # is painted first and the nested ones stack on top of it. Fill and
@@ -362,13 +327,13 @@ plot.mo.bqr.svy <- function(x,
 
     g <- ggplot2::ggplot(df_points, ggplot2::aes(x = .data$y1, y = .data$y2)) +
       refined_theme +
-      ggplot2::geom_point(alpha = point_alpha * pt_alpha_m, color = pt_col,
-                          size = point_size * pt_size_m, shape = 16) +
+      ggplot2::geom_point(alpha = pt_alpha, color = pt_col,
+                          size = pt_size, shape = 16) +
       ggplot2::geom_ribbon(
         data = all_regions,
         ggplot2::aes(x = .data$y1, ymin = .data$min, ymax = .data$max,
                      fill = .data$tau_f, colour = .data$tau_f),
-        alpha = ribbon_alpha, linewidth = line_size * lw_mult,
+        alpha = ribbon_alpha, linewidth = line_width,
         outline.type = "full", inherit.aes = FALSE
       ) +
       ggplot2::scale_fill_manual(name = NULL, values = unname(palette),
@@ -395,15 +360,15 @@ plot.mo.bqr.svy <- function(x,
       refined_theme +
       ggplot2::geom_point(
         data = df_points, ggplot2::aes(x = .data$y1, y = .data$y2),
-        alpha = point_alpha * pt_alpha_m, color = pt_col,
-        size = point_size * pt_size_m, shape = 16
+        alpha = pt_alpha, color = pt_col,
+        size = pt_size, shape = 16
       ) +
       ggplot2::geom_path(
         data = contour_data,
         ggplot2::aes(x = .data$x, y = .data$y,
                      color = factor(.data$taus),
                      linetype = factor(.data$taus)),
-        linewidth = line_size * lw_mult
+        linewidth = line_width
       ) +
       ggplot2::scale_color_manual(
         name = NULL, values = unname(border_palette), labels = tau_labels
@@ -429,6 +394,5 @@ plot.mo.bqr.svy <- function(x,
     }
   }
 
-  print(g)
-  invisible(list(plot = g, data = all_regions))
+  g
 }

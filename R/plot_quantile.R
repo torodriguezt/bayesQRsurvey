@@ -8,89 +8,48 @@
 #' @details
 #' The \code{type} argument selects one of four displays.
 #' \itemize{
-#'   \item \code{type = "fit"} draws the fitted quantile curves versus a single
-#'         numeric predictor (selected via \code{which}). Optionally overlay
-#'         observed points and credible bands. Other covariates can be held
-#'         fixed via \code{at}.
-#'   \item \code{type = "quantile"} draws a single coefficient as a function
-#'         of the quantile \eqn{\tau}. Optionally add a reference line at 0 and
-#'         the corresponding OLS estimate.
-#'   \item \code{type = "trace"} draws MCMC traces at a chosen \eqn{\tau}. One
-#'         or several coefficients may be selected via \code{which}; when more
-#'         than one is shown the panels are arranged with \code{facet_wrap}.
-#'   \item \code{type = "density"} draws posterior densities at a chosen
-#'         \eqn{\tau}, faceted over the selected coefficients as for
-#'         \code{type = "trace"}.
+#'   \item \code{"fit"} draws the fitted quantile curves against a numeric
+#'         predictor, optionally with the observed data and credible bands.
+#'   \item \code{"quantile"} draws one or more coefficients as functions of
+#'         the quantile \eqn{\tau}, with a credible band.
+#'   \item \code{"trace"} draws the MCMC traces at one quantile.
+#'   \item \code{"density"} draws the posterior densities at one quantile.
 #' }
 #'
-#' Additional details on the arguments.
-#' \itemize{
-#'   \item \code{tau} must be included in \code{x$quantile}. If \code{NULL}, all
-#'         available quantiles in the object are used.
-#'   \item For \code{type = "fit"}, \code{which} must name a numeric column in
-#'         the original model. If \code{NULL}, the first numeric predictor
-#'         (different from the response) is chosen automatically.
-#'   \item For \code{type = "fit"}, \code{at} is a named list
-#'         (\code{list(var = value, ...)}) used to fix other covariates while
-#'         plotting versus the selected predictor. Provide valid levels for
-#'         factors.
-#'   \item When \code{use_ggplot = TRUE}, a ggplot object is returned and the
-#'         appearance is controlled by \code{theme_style} and
-#'         \code{color_palette}. Otherwise, base graphics are used and the
-#'         function returns \code{invisible(NULL)}.
-#' }
+#' @param x an object of class \code{"bqr.svy"}.
+#' @param type one of \code{"fit"}, \code{"quantile"}, \code{"trace"} or
+#'   \code{"density"} (see Details).
+#' @param tau quantile(s) to plot, among those fitted. If \code{NULL}, all
+#'   fitted quantiles are used.
+#' @param which what to display. For \code{type = "fit"}, the name of the
+#'   numeric predictor on the horizontal axis, by default the first one in the
+#'   model. For the other types, coefficient names or indices, by default the
+#'   first coefficient for \code{"quantile"} and all of them for
+#'   \code{"trace"} and \code{"density"}.
+#' @param add_points logical; overlay the observed data on the fitted curves.
+#' @param combine logical; with several quantiles, draw the fitted curves in one
+#'   panel (\code{TRUE}) or in one panel per quantile (\code{FALSE}).
+#' @param show_ci logical; add credible bands to the fitted curves.
+#' @param ci_probs lower and upper probabilities of the credible intervals
+#'   drawn in the plots. Default \code{c(0.025, 0.975)}.
+#' @param at named list of values for the covariates not on the horizontal axis
+#'   of the fit plot, for example \code{list(sex = "Girls")}. Covariates not
+#'   listed are held at their median, or at their first level for factors.
+#' @param grid_length number of predictor values at which the fitted curves are
+#'   evaluated.
+#' @param main optional plot title.
+#' @param theme_style \code{"minimal"} (default) or \code{"none"}. With
+#'   \code{"none"} no theme is applied, so the active \code{theme_set()} is used.
+#' @param color_palette one of \code{"viridis"}, \code{"plasma"},
+#'   \code{"set2"}, \code{"dark2"}, \code{"grey"} for greyscale printing, or
+#'   \code{"none"} to leave the colour scale to the user.
+#' @param add_h0 logical; add a horizontal line at zero to the quantile plot.
+#' @param add_ols logical; add the least-squares estimate to the quantile plot.
+#' @param ols_weights optional weights for the least-squares fit drawn by
+#'   \code{add_ols}, one per observation. By default the fit is unweighted.
+#' @param ... not used; any argument passed here is an error.
 #'
-#' @param x Object of class \code{bqr.svy}.
-#' @param y Ignored (S3 signature).
-#' @param type One of \code{"fit"}, \code{"quantile"}, \code{"trace"},
-#'   \code{"density"}.
-#' @param tau Quantile(s) to plot; must appear in \code{x$quantile}. If
-#'   \code{NULL}, all available are used.
-#' @param which Variable name(s) or coefficient index(es) to display.
-#'   For \code{type = "fit"}, the name of a numeric predictor to plot on the
-#'   x-axis (if \code{NULL}, the first numeric predictor is used).
-#'   For \code{type = "quantile"}, a character vector of coefficient names
-#'   or integer vector of indices; when more than one is given the plot uses
-#'   \code{facet_wrap} to show all coefficients in a single figure.
-#'   For \code{type = "trace"} and \code{type = "density"}, a character vector
-#'   of coefficient names or integer vector of indices; when \code{NULL} (the
-#'   default) all coefficients are shown, and when more than one is selected the
-#'   panels are arranged with \code{facet_wrap}.
-#' @param add_points (fit) Logical; overlay observed data points.
-#' @param combine (fit) Logical; with several \code{tau}, \code{TRUE} overlays
-#'   the curves in one panel and \code{FALSE} uses one panel per quantile.
-#' @param show_ci (fit) Logical; draw credible bands.
-#' @param ci_probs Length-2 numeric vector with the lower/upper probabilities of
-#'   the credible interval shown by the fit ribbon, the density plot bounds, and
-#'   the quantile-process band. Default \code{c(0.025, 0.975)} (95%).
-#' @param at (fit) Named list of fixed values for non-plotted
-#'   covariates (see Details).
-#' @param grid_length (fit) Integer; number of points in the predictor grid.
-#' @param points_alpha (fit) Point transparency in \code{[0,1]}.
-#' @param point_size (fit) Point size.
-#' @param line_size (fit/quantile) Line width for fitted/summary lines.
-#' @param main Optional main title.
-#' @param use_ggplot Logical; if \code{TRUE}, return a ggplot object.
-#' @param theme_style (ggplot) One of \code{"minimal"}, \code{"classic"},
-#'   \code{"bw"}, \code{"light"}, or \code{"none"}. With \code{"none"} the plot
-#'   applies no theme and therefore honours the active \code{theme_set()}.
-#' @param color_palette (ggplot) One of \code{"viridis"}, \code{"plasma"},
-#'   \code{"set2"}, \code{"dark2"}, \code{"grey"} for a print-friendly greyscale
-#'   rendering (also switches the single-colour accents used by the trace,
-#'   density, and quantile plots to greys), or \code{"none"} to add no colour
-#'   scale so a user-supplied \code{scale_colour_*()} controls the mapping.
-#' @param add_h0 (quantile) Logical; add a horizontal reference at \eqn{y = 0}.
-#' @param add_ols (quantile) Logical; add the OLS estimate (dotted line) for the
-#'   selected coefficient.
-#' @param ols_fit (quantile) Optional precomputed \code{lm} object; if
-#'   \code{NULL}, an \code{lm()} is fitted internally using \code{x$model} and
-#'   \code{x$terms}.
-#' @param ols_weights (quantile) Optional numeric vector of weights when fitting
-#'   OLS internally (length must match \code{nrow(x$model)}).
-#' @param ... Not used.
-#'
-#' @return \code{invisible(NULL)} for base R graphics, or a ggplot object if
-#'   \code{use_ggplot = TRUE}.
+#' @return A ggplot object.
 #'
 #' @examples
 #' \donttest{
@@ -112,7 +71,7 @@
 #' @name plot.bqr.svy
 #' @export
 plot.bqr.svy <- function(
-    x, y = NULL,
+    x,
     type = c("fit", "quantile", "trace", "density"),
     tau = NULL,
     which = NULL,
@@ -122,19 +81,15 @@ plot.bqr.svy <- function(
     ci_probs = c(0.025, 0.975),
     at = NULL,
     grid_length = 200,
-    points_alpha = 0.4,
-    point_size = 2.5,
-    line_size = 1.2,
     main = NULL,
-    use_ggplot = TRUE,
-    theme_style = c("minimal", "classic", "bw", "light", "none"),
+    theme_style = c("minimal", "none"),
     color_palette = c("viridis", "plasma", "set2", "dark2", "grey", "none"),
     add_h0 = FALSE,
     add_ols = FALSE,
-    ols_fit = NULL,
     ols_weights = NULL,
     ...
 ) {
+  .stop_on_dots(match.call(expand.dots = FALSE)$...)
   type <- match.arg(type)
   theme_style <- match.arg(theme_style)
   color_palette <- match.arg(color_palette)
@@ -158,7 +113,6 @@ plot.bqr.svy <- function(
     if (!length(keep)) stop("The 'draws' do not contain the expected coefficient columns.", call. = FALSE)
     D[, keep, drop = FALSE]
   }
-  .alpha <- function(col, a) grDevices::adjustcolor(col, alpha.f = max(min(a, 1), 0))
   .make_newdata <- function(pred, at_vals, grid_len) {
     # Build the prediction grid from the base variables of the model formula,
     # not from the (already transformed) model-frame columns. The model frame
@@ -196,19 +150,12 @@ plot.bqr.svy <- function(
     as.data.frame(nd, stringsAsFactors = FALSE)
   }
 
-  # Theme setup for ggplot. "none" applies no theme, so the plot honours the
-  # active theme_set() (useful for reproducing a paper's own styling). The
-  # other styles use a light preset that inherits the base theme's colours and
-  # fonts rather than forcing greys, so the output stays clean and composable.
+  # "none" applies no theme, so the plot honours the active theme_set() (useful
+  # for reproducing a paper's own styling). "minimal" is a light preset that
+  # inherits the base theme's colours and fonts rather than forcing greys.
   .get_theme <- function(style) {
     if (identical(style, "none")) return(NULL)
-    base <- switch(style,
-           "minimal" = ggplot2::theme_minimal(),
-           "classic" = ggplot2::theme_classic(),
-           "bw" = ggplot2::theme_bw(),
-           "light" = ggplot2::theme_light()
-    )
-    base + ggplot2::theme(
+    ggplot2::theme_minimal() + ggplot2::theme(
       plot.title       = ggplot2::element_text(face = "bold", hjust = 0),
       panel.grid.minor = ggplot2::element_blank(),
       plot.margin      = ggplot2::margin(12, 12, 8, 8)
@@ -256,15 +203,6 @@ plot.bqr.svy <- function(
     )
   }
 
-  # Colors (base R)
-  cols <- if (identical(color_palette, "grey")) {
-    grDevices::grey.colors(length(tau), start = 0.7, end = 0.1)
-  } else if (exists("hcl.colors", where = asNamespace("grDevices"), inherits = FALSE)) {
-    grDevices::hcl.colors(length(tau), "Dark 3")
-  } else {
-    grDevices::rainbow(length(tau))
-  }
-
   if (type == "fit") {
     predictor <- which
     if (is.null(predictor)) {
@@ -282,89 +220,82 @@ plot.bqr.svy <- function(
     }
     Xg <- Xg[, X_colnames, drop = FALSE]
 
-    if (use_ggplot && requireNamespace("ggplot2", quietly = TRUE)) {
-      plot_data_list <- lapply(seq_along(tau), function(k) {
-        ti <- tau[k]
-        Dk <- .get_draws(x, tau_sel = ti)
-        preds <- Xg %*% t(Dk)
+    plot_data_list <- lapply(seq_along(tau), function(k) {
+      ti <- tau[k]
+      Dk <- .get_draws(x, tau_sel = ti)
+      preds <- Xg %*% t(Dk)
 
-        xg <- newdata[[predictor]]
-        # the curve is the conditional quantile at the posterior mean, x' beta_bar,
-        # the same quantity fitted() returns at the observed covariates
-        qfit <- drop(Xg %*% colMeans(Dk))
+      xg <- newdata[[predictor]]
+      # the curve is the conditional quantile at the posterior mean, x' beta_bar,
+      # the same quantity fitted() returns at the observed covariates
+      qfit <- drop(Xg %*% colMeans(Dk))
 
-        df <- data.frame(
-          x = xg,
-          y = qfit,
-          tau = format(ti, trim = TRUE),
-          tau_numeric = ti
-        )
-
-        if (show_ci) {
-          qs <- t(apply(preds, 1, stats::quantile, probs = ci_probs))
-          df$y_lower <- qs[, 1]
-          df$y_upper <- qs[, 2]
-        }
-        df
-      })
-
-      plot_data <- do.call(rbind, plot_data_list)
-
-      p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$x, y = .data$y))
+      df <- data.frame(
+        x = xg,
+        y = qfit,
+        tau = format(ti, trim = TRUE),
+        tau_numeric = ti
+      )
 
       if (show_ci) {
-        p <- p + ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$y_lower, ymax = .data$y_upper,
-                                                   fill = .data$tau), alpha = 0.25)
-        p <- p + .get_fill_scale(color_palette, length(tau))
+        qs <- t(apply(preds, 1, stats::quantile, probs = ci_probs))
+        df$y_lower <- qs[, 1]
+        df$y_upper <- qs[, 2]
       }
+      df
+    })
 
-      if (add_points) {
-        obs_data <- data.frame(x = mf[[predictor]], y = mf[[resp]])
-        p <- p + ggplot2::geom_point(data = obs_data, ggplot2::aes(x = .data$x, y = .data$y),
-                                     color = "grey50", alpha = points_alpha, size = point_size,
-                                     shape = 16, inherit.aes = FALSE)
-      }
+    plot_data <- do.call(rbind, plot_data_list)
 
-      p <- p + ggplot2::geom_line(ggplot2::aes(color = .data$tau), linewidth = line_size)
-      p <- p + .get_color_scale(color_palette, length(tau))
+    p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$x, y = .data$y))
 
-      p <- p + .get_theme(theme_style) +
-        ggplot2::labs(
-          x = predictor,
-          y = resp,
-          color = expression(tau),
-          title = main
-        )
-
-      if (show_ci) {
-        p <- p + ggplot2::labs(fill = expression(tau))
-      }
-
-      if (length(tau) > 1 && !combine) {
-        p <- p + ggplot2::facet_wrap(~ .data$tau, scales = "free_y")
-      }
-
-      # Legend placement is only imposed when the plot supplies its own theme;
-      # with theme_style = "none" the active theme_set() controls the legend.
-      if (theme_style != "none") {
-        if (length(tau) > 1L) {
-          p <- p + ggplot2::theme(
-            legend.title = ggplot2::element_text(size = 11, face = "bold"),
-            legend.text = ggplot2::element_text(size = 10),
-            legend.position = "bottom",
-            legend.box = "horizontal"
-          )
-        } else {
-          p <- p + ggplot2::theme(legend.position = "none")
-        }
-      }
-      return(p)
-
-    } else {
-      return(.plot_fit_base(x, predictor, tau, mf, tt, X_colnames, resp, newdata, Xg,
-                            add_points, combine, show_ci, ci_probs, grid_length,
-                            points_alpha, point_size, line_size, main, cols))
+    if (show_ci) {
+      p <- p + ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$y_lower, ymax = .data$y_upper,
+                                                 fill = .data$tau), alpha = 0.25)
+      p <- p + .get_fill_scale(color_palette, length(tau))
     }
+
+    if (add_points) {
+      obs_data <- data.frame(x = mf[[predictor]], y = mf[[resp]])
+      p <- p + ggplot2::geom_point(data = obs_data, ggplot2::aes(x = .data$x, y = .data$y),
+                                   color = "grey50", alpha = 0.4, size = 2.5,
+                                   shape = 16, inherit.aes = FALSE)
+    }
+
+    p <- p + ggplot2::geom_line(ggplot2::aes(color = .data$tau), linewidth = 1.2)
+    p <- p + .get_color_scale(color_palette, length(tau))
+
+    p <- p + .get_theme(theme_style) +
+      ggplot2::labs(
+        x = predictor,
+        y = resp,
+        color = expression(tau),
+        title = main
+      )
+
+    if (show_ci) {
+      p <- p + ggplot2::labs(fill = expression(tau))
+    }
+
+    if (length(tau) > 1 && !combine) {
+      p <- p + ggplot2::facet_wrap(~ .data$tau, scales = "free_y")
+    }
+
+    # Legend placement is only imposed when the plot supplies its own theme;
+    # with theme_style = "none" the active theme_set() controls the legend.
+    if (theme_style != "none") {
+      if (length(tau) > 1L) {
+        p <- p + ggplot2::theme(
+          legend.title = ggplot2::element_text(size = 11, face = "bold"),
+          legend.text = ggplot2::element_text(size = 10),
+          legend.position = "bottom",
+          legend.box = "horizontal"
+        )
+      } else {
+        p <- p + ggplot2::theme(legend.position = "none")
+      }
+    }
+    return(p)
   }
 
   if (type == "quantile") {
@@ -386,18 +317,20 @@ plot.bqr.svy <- function(
       which_idx[w]   <- idx_w
     }
 
-    # Optional OLS (compute once)
-    ols_fit_obj <- NULL
+    # Optional least-squares reference. Fitted directly on the design matrix of
+    # the model, so the weights are taken as given rather than looked up through
+    # lm()'s non-standard evaluation.
+    ols_coef <- NULL
     if (isTRUE(add_ols)) {
-      if (is.null(ols_fit)) {
-        fm <- stats::formula(tt)
-        if (is.null(ols_weights))
-          ols_fit_obj <- stats::lm(fm, data = mf, contrasts = x$contrasts)
-        else
-          ols_fit_obj <- stats::lm(fm, data = mf, weights = ols_weights,
-                                   contrasts = x$contrasts)
+      X_ols <- .model_matrix(x)
+      y_ols <- stats::model.response(mf)
+      if (is.null(ols_weights)) {
+        ols_coef <- stats::lm.fit(X_ols, y_ols)$coefficients
       } else {
-        ols_fit_obj <- ols_fit
+        if (!is.numeric(ols_weights) || length(ols_weights) != nrow(X_ols))
+          stop("'ols_weights' must be a numeric vector with one weight per observation (",
+               nrow(X_ols), ").", call. = FALSE)
+        ols_coef <- stats::lm.wfit(X_ols, y_ols, ols_weights)$coefficients
       }
     }
 
@@ -423,314 +356,136 @@ plot.bqr.svy <- function(
 
     # OLS reference values per coefficient
     ols_df <- NULL
-    if (isTRUE(add_ols) && !is.null(ols_fit_obj)) {
-      cn <- names(stats::coef(ols_fit_obj))
-      ols_vals <- vapply(which_names, function(nm) {
-        j <- match(nm, cn)
-        if (!is.na(j)) stats::coef(ols_fit_obj)[j] else NA_real_
-      }, numeric(1))
+    if (!is.null(ols_coef)) {
+      ols_vals <- unname(ols_coef[which_names])
       ols_df <- data.frame(coef = factor(which_names, levels = which_names),
                            ols = ols_vals, stringsAsFactors = FALSE)
       ols_df <- ols_df[is.finite(ols_df$ols), , drop = FALSE]
     }
 
-    # Single coefficient case (backwards compatible)
     multi_coef <- length(which_idx) > 1L
 
-    # ggplot2 plot
-    if (use_ggplot && requireNamespace("ggplot2", quietly = TRUE)) {
-      p <- ggplot2::ggplot(qsum, ggplot2::aes(x = .data$tau, y = .data$est))
+    p <- ggplot2::ggplot(qsum, ggplot2::aes(x = .data$tau, y = .data$est))
 
-      # Always show the credible band for quantile plots
-      p <- p + ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lo, ymax = .data$hi),
-                                    fill = accent_fill, alpha = 0.3,
-                                    inherit.aes = TRUE)
+    # Always show the credible band for quantile plots
+    p <- p + ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lo, ymax = .data$hi),
+                                  fill = accent_fill, alpha = 0.3,
+                                  inherit.aes = TRUE)
 
-      if (isTRUE(add_h0)) {
-        p <- p + ggplot2::geom_hline(yintercept = 0, linetype = "dashed",
-                                     color = "grey50", linewidth = 0.5)
-      }
-      if (isTRUE(add_ols) && !is.null(ols_df) && nrow(ols_df) > 0L) {
-        p <- p + ggplot2::geom_hline(data = ols_df,
-                                     ggplot2::aes(yintercept = .data$ols),
-                                     linetype = "dotted",
-                                     color = ref_col, linewidth = 0.8)
-      }
-
-      p <- p + ggplot2::geom_line(color = accent_col, linewidth = 0.5,
-                                  linetype = "dashed")
-      p <- p + ggplot2::geom_point(color = accent_col, size = 1.6, shape = 1)
-
-      if (multi_coef) {
-        p <- p + ggplot2::facet_wrap(~ .data$coef, scales = "free_y")
-      }
-
-      p <- p + .get_theme(theme_style) +
-        ggplot2::labs(
-          x = expression(tau),
-          y = if (!multi_coef) which_names[1] else NULL,
-          title = main
-        ) +
-        ggplot2::theme(legend.position = "none")
-
-      # Bold facet strips are only imposed when the plot supplies its own theme;
-      # with theme_style = "none" the active theme_set() controls the strips.
-      if (multi_coef && theme_style != "none") {
-        p <- p + ggplot2::theme(
-          strip.text = ggplot2::element_text(size = 11, face = "bold")
-        )
-      }
-      return(p)
-
-    } else {
-      # Base R (single coefficient only)
-      idx <- which_idx[1]
-      coef_name <- which_names[1]
-      ols_coef <- if (!is.null(ols_df) && nrow(ols_df) > 0L) ols_df$ols[1] else NA_real_
-      ylim <- range(qsum$lo, qsum$hi, qsum$est, if (add_h0) 0 else NA_real_, na.rm = TRUE)
-      graphics::plot(qsum$tau, qsum$est, type = "n",
-                     xlab = "Quantile", ylab = coef_name,
-                     main = if (is.null(main)) sprintf("Coefficient across quantiles: %s", coef_name) else main,
-                     ylim = ylim)
-      graphics::grid()
-      if (isTRUE(show_ci)) {
-        xx <- c(qsum$tau, rev(qsum$tau))
-        yy <- c(qsum$lo,  rev(qsum$hi))
-        graphics::polygon(xx, yy, col = grDevices::adjustcolor("gray50", 0.3), border = NA)
-      }
-      graphics::lines(qsum$tau, qsum$est, lwd = line_size)
-      graphics::points(qsum$tau, qsum$est, pch = 19)
-      if (isTRUE(add_h0))  graphics::abline(h = 0, lty = 1)
-      if (isTRUE(add_ols) && is.finite(ols_coef)) graphics::abline(h = ols_coef, lty = 3)
-      invisible(NULL)
+    if (isTRUE(add_h0)) {
+      p <- p + ggplot2::geom_hline(yintercept = 0, linetype = "dashed",
+                                   color = "grey50", linewidth = 0.5)
     }
+    if (!is.null(ols_df) && nrow(ols_df) > 0L) {
+      p <- p + ggplot2::geom_hline(data = ols_df,
+                                   ggplot2::aes(yintercept = .data$ols),
+                                   linetype = "dotted",
+                                   color = ref_col, linewidth = 0.8)
+    }
+
+    p <- p + ggplot2::geom_line(color = accent_col, linewidth = 0.5,
+                                linetype = "dashed")
+    p <- p + ggplot2::geom_point(color = accent_col, size = 1.6, shape = 1)
+
+    if (multi_coef) {
+      p <- p + ggplot2::facet_wrap(~ .data$coef, scales = "free_y")
+    }
+
+    p <- p + .get_theme(theme_style) +
+      ggplot2::labs(
+        x = expression(tau),
+        y = if (!multi_coef) which_names[1] else NULL,
+        title = main
+      ) +
+      ggplot2::theme(legend.position = "none")
+
+    # Bold facet strips are only imposed when the plot supplies its own theme;
+    # with theme_style = "none" the active theme_set() controls the strips.
+    if (multi_coef && theme_style != "none") {
+      p <- p + ggplot2::theme(
+        strip.text = ggplot2::element_text(size = 11, face = "bold")
+      )
+    }
+    return(p)
   }
 
+  # type is "trace" or "density": both show the draws at a single quantile
+  D <- .get_draws(x, tau_sel = tau[1])
+  # which = NULL selects every coefficient; a name/index vector selects a subset
+  if (is.null(which)) which <- colnames(D)
+  idx <- if (is.character(which)) match(which, colnames(D)) else which
+  if (anyNA(idx) || any(idx < 1) || any(idx > ncol(D)))
+    stop("'which' out of range.", call. = FALSE)
+  nms <- colnames(D)[idx]
+  # reference line at the posterior mean, the estimate coef() reports
+  est_data <- data.frame(coef = factor(nms, levels = nms),
+                         est  = colMeans(D[, idx, drop = FALSE]))
 
   if (type == "trace") {
-    D <- .get_draws(x, tau_sel = tau[1])
-    # which = NULL selects every coefficient; a name/index vector selects a subset
-    if (is.null(which)) which <- colnames(D)
-    idx <- if (is.character(which)) match(which, colnames(D)) else which
-    if (anyNA(idx) || any(idx < 1) || any(idx > ncol(D)))
-      stop("'which' out of range.", call. = FALSE)
-    nms <- colnames(D)[idx]
+    trace_data <- do.call(rbind, lapply(seq_along(idx), function(j)
+      data.frame(iteration = seq_len(nrow(D)), value = D[, idx[j]],
+                 coef = nms[j], stringsAsFactors = FALSE)))
+    trace_data$coef <- factor(trace_data$coef, levels = nms)
 
-    if (use_ggplot && requireNamespace("ggplot2", quietly = TRUE)) {
-      trace_data <- do.call(rbind, lapply(seq_along(idx), function(j)
-        data.frame(iteration = seq_len(nrow(D)), value = D[, idx[j]],
-                   coef = nms[j], stringsAsFactors = FALSE)))
-      trace_data$coef <- factor(trace_data$coef, levels = nms)
-      # reference line at the posterior mean, the estimate coef() reports
-      est_data <- data.frame(coef = factor(nms, levels = nms),
-                             est  = colMeans(D[, idx, drop = FALSE]))
-
-      p <- ggplot2::ggplot(trace_data,
-                           ggplot2::aes(x = .data$iteration, y = .data$value))
-      p <- p + ggplot2::geom_line(color = accent_col, linewidth = 0.3, alpha = 0.7)
-      p <- p + ggplot2::geom_hline(data = est_data,
-                                   ggplot2::aes(yintercept = .data$est),
-                                   color = ref_col, linetype = "dashed",
-                                   linewidth = 0.8)
-      if (length(idx) > 1L)
-        p <- p + ggplot2::facet_wrap(~ .data$coef, scales = "free_y")
-      p <- p + .get_theme(theme_style)
-      p <- p + ggplot2::labs(
-        x = "Iteration",
-        y = if (length(idx) == 1L) nms[1] else "Value",
-        title = main
-      )
-      return(p)
-
-    } else {
-      return(.plot_trace_base(D, idx, tau, main))
-    }
+    p <- ggplot2::ggplot(trace_data,
+                         ggplot2::aes(x = .data$iteration, y = .data$value))
+    p <- p + ggplot2::geom_line(color = accent_col, linewidth = 0.3, alpha = 0.7)
+    p <- p + ggplot2::geom_hline(data = est_data,
+                                 ggplot2::aes(yintercept = .data$est),
+                                 color = ref_col, linetype = "dashed",
+                                 linewidth = 0.8)
+    if (length(idx) > 1L)
+      p <- p + ggplot2::facet_wrap(~ .data$coef, scales = "free_y")
+    p <- p + .get_theme(theme_style)
+    p <- p + ggplot2::labs(
+      x = "Iteration",
+      y = if (length(idx) == 1L) nms[1] else "Value",
+      title = main
+    )
+    return(p)
   }
 
-  if (type == "density") {
-    D <- .get_draws(x, tau_sel = tau[1])
-    # which = NULL selects every coefficient; a name/index vector selects a subset
-    if (is.null(which)) which <- colnames(D)
-    idx <- if (is.character(which)) match(which, colnames(D)) else which
-    if (anyNA(idx) || any(idx < 1) || any(idx > ncol(D)))
-      stop("'which' out of range.", call. = FALSE)
-    nms <- colnames(D)[idx]
+  dens_data <- do.call(rbind, lapply(seq_along(idx), function(j)
+    data.frame(x = D[, idx[j]], coef = nms[j], stringsAsFactors = FALSE)))
+  dens_data$coef <- factor(dens_data$coef, levels = nms)
+  ci_data <- do.call(rbind, lapply(seq_along(idx), function(j)
+    data.frame(coef = nms[j],
+               xint = as.numeric(stats::quantile(D[, idx[j]], probs = ci_probs)),
+               stringsAsFactors = FALSE)))
+  ci_data$coef <- factor(ci_data$coef, levels = nms)
 
-    if (use_ggplot && requireNamespace("ggplot2", quietly = TRUE)) {
-      dens_data <- do.call(rbind, lapply(seq_along(idx), function(j)
-        data.frame(x = D[, idx[j]], coef = nms[j], stringsAsFactors = FALSE)))
-      dens_data$coef <- factor(dens_data$coef, levels = nms)
-      # reference line at the posterior mean, the estimate coef() reports
-      est_data <- data.frame(coef = factor(nms, levels = nms),
-                             est  = colMeans(D[, idx, drop = FALSE]))
-      ci_data <- do.call(rbind, lapply(seq_along(idx), function(j)
-        data.frame(coef = nms[j],
-                   xint = as.numeric(stats::quantile(D[, idx[j]], probs = ci_probs)),
-                   stringsAsFactors = FALSE)))
-      ci_data$coef <- factor(ci_data$coef, levels = nms)
-
-      p <- ggplot2::ggplot(dens_data, ggplot2::aes(x = .data$x))
-      p <- p + ggplot2::geom_density(fill = accent_fill, color = accent_col,
-                                     alpha = 0.6, linewidth = 0.7)
-      p <- p + ggplot2::geom_vline(data = est_data,
-                                   ggplot2::aes(xintercept = .data$est),
-                                   color = ref_col, linetype = "dashed",
-                                   linewidth = 0.8)
-      p <- p + ggplot2::geom_vline(data = ci_data,
-                                   ggplot2::aes(xintercept = .data$xint),
-                                   color = "grey50", linetype = "dotted",
-                                   linewidth = 0.5)
-      if (length(idx) > 1L)
-        p <- p + ggplot2::facet_wrap(~ .data$coef, scales = "free")
-      p <- p + .get_theme(theme_style)
-      p <- p + ggplot2::labs(
-        x = if (length(idx) == 1L) nms[1] else "Value",
-        y = "Density",
-        title = main
-      )
-      return(p)
-
-    } else {
-      return(.plot_density_base(D, idx, tau, main))
-    }
-  }
-
-  invisible(NULL)
+  p <- ggplot2::ggplot(dens_data, ggplot2::aes(x = .data$x))
+  p <- p + ggplot2::geom_density(fill = accent_fill, color = accent_col,
+                                 alpha = 0.6, linewidth = 0.7)
+  p <- p + ggplot2::geom_vline(data = est_data,
+                               ggplot2::aes(xintercept = .data$est),
+                               color = ref_col, linetype = "dashed",
+                               linewidth = 0.8)
+  p <- p + ggplot2::geom_vline(data = ci_data,
+                               ggplot2::aes(xintercept = .data$xint),
+                               color = "grey50", linetype = "dotted",
+                               linewidth = 0.5)
+  if (length(idx) > 1L)
+    p <- p + ggplot2::facet_wrap(~ .data$coef, scales = "free")
+  p <- p + .get_theme(theme_style)
+  p + ggplot2::labs(
+    x = if (length(idx) == 1L) nms[1] else "Value",
+    y = "Density",
+    title = main
+  )
 }
 
 
-# --------------------------------------------------------------------
-# Helper functions for base R
-# --------------------------------------------------------------------
-
-.plot_fit_base <- function(x, predictor, tau, mf, tt, X_colnames, resp, newdata, Xg,
-                           add_points, combine, show_ci, ci_probs, grid_length,
-                           points_alpha, point_size, line_size, main, cols) {
-
-  .get_draws <- function(obj, tau_sel = NULL) {
-    D <- .draws_for_tau(obj, tau_sel, include_sigma = FALSE)
-    keep <- intersect(colnames(D), X_colnames)
-    D[, keep, drop = FALSE]
-  }
-
-  .alpha <- function(col, a) grDevices::adjustcolor(col, alpha.f = max(min(a, 1), 0))
-  .best_mfrow <- function(n) { r <- floor(sqrt(n)); c <- ceiling(n / r); c(r, c) }
-
-  preds_list <- lapply(tau, function(ti) {
-    Dk <- .get_draws(x, tau_sel = ti)
-    Xg %*% t(Dk)
-  })
-  y_rng <- range(do.call(cbind, preds_list), na.rm = TRUE)
-  xg <- newdata[[predictor]]
-
-  if (length(tau) == 1L || isTRUE(combine)) {
-    graphics::plot(xg, rowMeans(preds_list[[1]]), type = "n",
-                   xlab = predictor, ylab = resp,
-                   main = if (is.null(main)) {
-                     if (length(tau) == 1L) sprintf("Quantile fit vs %s (tau=%.3f)", predictor, tau[1])
-                     else sprintf("Quantile fit vs %s (taus: %s)", predictor, paste(format(tau, digits = 3), collapse = ", "))
-                   } else main,
-                   ylim = y_rng)
-    graphics::grid()
-
-    if (isTRUE(show_ci)) {
-      q_low <- ci_probs[1]; q_high <- ci_probs[2]
-      for (k in seq_along(tau)) {
-        preds_k <- preds_list[[k]]
-        y_low <- apply(preds_k, 1, stats::quantile, probs = q_low)
-        y_high <- apply(preds_k, 1, stats::quantile, probs = q_high)
-        polygon_col <- .alpha(cols[k], 0.3)
-        graphics::polygon(c(xg, rev(xg)), c(y_low, rev(y_high)),
-                          col = polygon_col, border = NA)
-      }
-    }
-
-    for (k in seq_along(tau)) {
-      preds_k <- preds_list[[k]]
-      # x' beta_bar, the same quantity fitted() returns
-      y_fit <- rowMeans(preds_k)
-      graphics::lines(xg, y_fit, col = cols[k], lwd = line_size)
-    }
-
-    if (isTRUE(add_points)) {
-      pred_vals <- mf[[predictor]]
-      resp_vals <- mf[[resp]]
-      pts_col <- .alpha("gray30", points_alpha)
-      graphics::points(pred_vals, resp_vals, col = pts_col, pch = 19, cex = point_size)
-    }
-
-    if (length(tau) > 1L) {
-      labs <- sprintf("tau = %.3f", tau)
-      graphics::legend("topright", legend = labs, col = cols, lwd = line_size, bty = "n")
-    }
-
-  } else {
-    mfr <- .best_mfrow(length(tau))
-    op <- graphics::par(mfrow = mfr)
-    on.exit(graphics::par(op), add = TRUE)
-
-    for (k in seq_along(tau)) {
-      ti <- tau[k]
-      preds_k <- preds_list[[k]]
-      y_fit <- rowMeans(preds_k)
-
-      graphics::plot(xg, y_fit, type = "l", col = cols[k], lwd = line_size,
-                     xlab = predictor, ylab = resp,
-                     main = sprintf("tau = %.3f", ti))
-      graphics::grid()
-
-      if (isTRUE(show_ci)) {
-        q_low <- ci_probs[1]; q_high <- ci_probs[2]
-        y_low <- apply(preds_k, 1, stats::quantile, probs = q_low)
-        y_high <- apply(preds_k, 1, stats::quantile, probs = q_high)
-        polygon_col <- .alpha(cols[k], 0.3)
-        graphics::polygon(c(xg, rev(xg)), c(y_low, rev(y_high)),
-                          col = polygon_col, border = NA)
-      }
-
-      if (isTRUE(add_points)) {
-        pred_vals <- mf[[predictor]]
-        resp_vals <- mf[[resp]]
-        pts_col <- .alpha("gray30", points_alpha)
-        graphics::points(pred_vals, resp_vals, col = pts_col, pch = 19, cex = point_size)
-      }
-    }
-  }
-  invisible(NULL)
+# Removed or renamed plot arguments would otherwise fall into `...` and be
+# ignored without notice, changing the figure. Fail as R does for an unused
+# argument, naming the replacement when there is one.
+.stop_on_dots <- function(dots, renamed = character()) {
+  if (!length(dots)) return(invisible(NULL))
+  nms <- names(dots)
+  if (is.null(nms)) nms <- rep("", length(dots))
+  hint <- ifelse(nms %in% names(renamed),
+                 paste0(" (now '", renamed[nms], "')"), "")
+  shown <- ifelse(nzchar(nms), paste0("'", nms, "'"), "an unnamed argument")
+  stop("Unused argument(s): ", paste0(shown, hint, collapse = ", "), ".",
+       call. = FALSE)
 }
-
-.plot_trace_base <- function(D, idx, tau, main) {
-  if (length(idx) > 1L) {
-    op <- graphics::par(no.readonly = TRUE); on.exit(graphics::par(op))
-    r <- floor(sqrt(length(idx)))
-    graphics::par(mfrow = c(r, ceiling(length(idx) / r)))
-  }
-  for (i in idx) {
-    v <- D[, i]; nm <- colnames(D)[i]
-    graphics::plot(v, type = "l", col = "steelblue",
-                   main = if (is.null(main)) sprintf("MCMC trace: %s (tau=%.3f)", nm, tau[1]) else main,
-                   xlab = "Iteration", ylab = nm)
-    graphics::abline(h = mean(v), col = "red", lty = 2)
-    graphics::grid(nx = NA, ny = NULL)
-  }
-  invisible(NULL)
-}
-
-.plot_density_base <- function(D, idx, tau, main) {
-  if (length(idx) > 1L) {
-    op <- graphics::par(no.readonly = TRUE); on.exit(graphics::par(op))
-    r <- floor(sqrt(length(idx)))
-    graphics::par(mfrow = c(r, ceiling(length(idx) / r)))
-  }
-  for (i in idx) {
-    v <- D[, i]; nm <- colnames(D)[i]
-    d <- stats::density(v)
-    graphics::plot(d, main = if (is.null(main)) sprintf("Posterior density: %s (tau=%.3f)", nm, tau[1]) else main,
-                   xlab = nm)
-    graphics::abline(v = mean(v), col = "red", lty = 2)
-    graphics::grid(nx = NA, ny = NULL)
-  }
-  invisible(NULL)
-}
-
-
