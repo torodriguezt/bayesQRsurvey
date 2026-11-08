@@ -60,7 +60,7 @@ if (!exists("%||%"))
 #' @param data an optional data frame containing the variables in the model.
 #' @param quantile numerical scalar or vector containing quantile(s) of interest (default=0.5).
 #' @param method one of \code{"ald"}, \code{"score"} and \code{"approximate"} (default=\code{"ald"}).
-#' @param prior a \code{bqr_prior} object of class "prior". If omitted, a vague prior is assumed (see \code{\link{prior}}).
+#' @param prior an object of class \code{"prior"} created with \code{\link{prior}}. If omitted, a vague prior is assumed.
 #' @param niter number of MCMC draws.
 #' @param burnin number of initial MCMC draws to be discarded.(default = 0)
 #' @param thin thinning parameter, i.e., keep every keepth draw (default=1).
@@ -87,14 +87,13 @@ if (!exists("%||%"))
 #' @return An object of class \code{"bqr.svy"} with the components listed below.
 #' The components that depend on the quantile (\code{beta}, \code{draws},
 #' \code{diagnosis} and \code{accept_rate}) have one entry per fitted quantile,
-#' named \code{"tau=0.100"}, \code{"tau=0.500"} and so on, also when a single
-#' quantile was fitted.
+#' named \code{"tau="} followed by the quantile with three decimals (for
+#' example, \code{"tau=0.500"}).
 #' \item{beta}{Matrix of posterior mean estimates of the regression coefficients,
 #'   with one row per coefficient and one column per quantile.}
 #' \item{draws}{Named list of posterior draw matrices, one per quantile. The
 #'   first columns are the regression coefficients, followed by the ALD scale
-#'   when applicable. Its column is named \code{sigma}, or a unique suffix such
-#'   as \code{sigma.1} if that name is already a regression coefficient.}
+#'   when applicable.}
 #' \item{diagnosis}{Named list of convergence diagnostics, one per quantile.}
 #' \item{accept_rate}{Named vector of average acceptance rates, one per quantile
 #'   (\code{NA} for \code{method = "ald"}, which uses Gibbs sampling).}
@@ -246,6 +245,27 @@ bqr.svy <- function(formula,
     if (nrow(pi_matrix) != length(y) || ncol(pi_matrix) != length(y))
       stop("'pi_matrix' must be an n x n matrix with n = length(response).",
            call. = FALSE)
+  }
+
+  # Checked here rather than in the C++ sampler, so that warnings name bqr.svy()
+  # and appear once per fit instead of once per quantile.
+  if (method == "approximate") {
+    has_pi2 <- FALSE
+    if (is.null(pi_matrix)) {
+      if (any(w < 1))
+        warning("Some implied inclusion probabilities 1/w_i exceed 1; check the weights.")
+    } else {
+      if (any(!is.finite(pi_matrix)))
+        stop("'pi_matrix' must contain only finite values.", call. = FALSE)
+      off <- pi_matrix
+      diag(off) <- 0
+      has_pi2 <- any(off != 0)
+    }
+    if (!has_pi2)
+      warning("Second-order inclusion probabilities not provided: using a biased ",
+              "Horvitz-Thompson variance estimator (first term only). Supply ",
+              "'pi_matrix' (diagonal = first-order, triangle = second-order) for ",
+              "the unbiased estimator.")
   }
 
   pri <- if (is.null(prior)) {

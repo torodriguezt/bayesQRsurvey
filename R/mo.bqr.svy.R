@@ -81,7 +81,7 @@ if (!exists("%||%"))
 #' @param data an optional data frame containing the variables in the model.
 #'   Missing values must be removed or imputed before fitting.
 #' @param quantile numerical scalar or vector containing quantile(s) of interest (default=0.5).
-#' @param prior a \code{bqr_prior} object of class "prior". If omitted, a vague prior is assumed (see \code{\link{prior}}).
+#' @param prior an object of class \code{"prior"} created with \code{\link{prior}}. If omitted, a vague prior is assumed.
 #' @param U an optional \eqn{d \times K}-matrix of directions, where \eqn{d} indicates the response variable dimension
 #' and \eqn{K} indicates indicates the number of directions.
 #' @param gamma_U an optional list with length equal to \eqn{K} for which each element corresponds to
