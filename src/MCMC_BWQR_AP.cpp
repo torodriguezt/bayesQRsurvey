@@ -150,19 +150,9 @@ Rcpp::List _mcmc_bwqr_ap_cpp(const arma::vec& y,
     }
   } else {
     pi1 = 1.0 / w;
-    if (pi1.max() > 1.0)
-      Rcpp::warning("Some implied inclusion probabilities 1/w_i exceed 1; check the weights.");
   }
 
   d0 = (1.0 - pi1) / arma::square(pi1);
-
-  if (!have_pi2) {
-    Rcpp::warning(
-      "Second-order inclusion probabilities not provided: using a biased "
-      "Horvitz-Thompson variance estimator (first term only). Supply "
-      "'pi_matrix' (diagonal = first-order, triangle = second-order) for the "
-      "unbiased estimator.");
-  }
 
   arma::vec w2 = w % w;
   arma::mat A_prop = (1.0 / n) * (X.t() * (X.each_col() % w2));
