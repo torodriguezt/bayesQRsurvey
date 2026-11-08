@@ -17,10 +17,6 @@
 #' about where the conditional quantile lies, and are not prediction intervals
 #' for a new observation.
 #'
-#' \code{posterior_interval} is the generic defined in \pkg{rstantools} and
-#' used by \pkg{brms} and \pkg{rstanarm}, so the same call works across these
-#' packages.
-#'
 #' @param object an object of class \code{"bqr.svy"}.
 #' @param tau a single fitted quantile. Defaults to the only one in the fit, and
 #'   is required when several were fitted.
