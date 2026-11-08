@@ -174,16 +174,15 @@ reveal.
 ### Priors and estimation methods
 
 Prior distributions are specified with `prior()` and supplied through the
-`prior` argument. The default is vague.
+`prior` argument; the default is vague. Rather than repeating the whole call,
+`update()` refits an existing model changing only the arguments given, here
+the prior.
 
 ```{r}
 myprior <- prior(beta_x_mean = rep(0, 4), beta_x_cov = 25)
 
 set.seed(50)
-fit_prior <- bqr.svy(wgt ~ age + I(age^2) + sex, weights = dweight,
-                     data = Anthro, quantile = 0.5,
-                     niter = 6000, burnin = 3000, thin = 1,
-                     prior = myprior, verbose = FALSE)
+fit_prior <- update(fit_ald, prior = myprior)
 ```
 
 The remaining two methods are selected through `method`. Both are adaptive
@@ -228,13 +227,13 @@ print(summary(fit_mo), coefficients = FALSE)
 The `plot()` method intersects the half-spaces for a chosen covariate profile
 and draws the resulting contours over the observed responses. The response
 names and the data are taken from the fitted object. The profile is supplied
-through `xValue`, in the order of the design-matrix columns, here
+through `x_value`, in the order of the design-matrix columns, here
 `(Intercept)`, `age`, `I(age^2)` and `sexGirls`, evaluated at a two-year-old
 boy.
 
 ```{r, fig.height = 5.5}
-plot(fit_mo, xValue = c(1, 2, 4, 0),
-     ngridpoints = 200, paintedArea = FALSE,
+plot(fit_mo, x_value = c(1, 2, 4, 0),
+     grid_length = 200, painted_area = FALSE,
      color_palette = "grey", theme_style = "none")
 ```
 
