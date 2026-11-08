@@ -9,12 +9,12 @@
 #' Extracts the convergence diagnostics stored by \code{\link{bqr.svy}} and
 #' \code{\link{mo.bqr.svy}}, selecting quantiles numerically.
 #'
-#' For \code{"bqr.svy"} fits the diagnostics are those of the MCMC sampler, namely
-#' the potential scale reduction factor \eqn{\hat{R}} together with the bulk and
-#' tail effective sample sizes, computed with the \pkg{posterior} package. As a rule of
-#' thumb \eqn{\hat{R} < 1.01} and effective sample sizes above 400 indicate that
-#' the chain has converged and carries enough information for stable posterior
-#' summaries.
+#' For \code{"bqr.svy"} fits the diagnostics are those of the MCMC sampler: the
+#' rank-normalised split-\eqn{\hat{R}} and the bulk and tail effective sample
+#' sizes of Vehtari et al. (2021), computed with the \pkg{posterior} package. As a
+#' rule of thumb \eqn{\hat{R} < 1.01} and effective sample sizes above 400
+#' indicate that the chain has converged and carries enough information for
+#' stable posterior summaries.
 #'
 #' For \code{"mo.bqr.svy"} fits estimation is by an EM algorithm rather than MCMC,
 #' so the diagnostics report, for each quantile and direction, the number of
@@ -27,6 +27,12 @@
 #'
 #' @return A data frame of diagnostics for a single quantile, or a named list of
 #'   such data frames when several quantiles are selected.
+#'
+#' @references
+#' Vehtari, A., Gelman, A., Simpson, D., Carpenter, B. and \enc{Bürkner}{Buerkner}, P.-C.
+#' (2021). Rank-normalization, folding, and localization: An improved
+#' \eqn{\hat{R}} for assessing convergence of MCMC (with discussion).
+#' \emph{Bayesian Analysis}, 16(2), 667-718. \doi{10.1214/20-BA1221}
 #'
 #' @seealso \code{\link{bqr.svy}}, \code{\link{mo.bqr.svy}},
 #'   \code{\link{bqr.svy.methods}}

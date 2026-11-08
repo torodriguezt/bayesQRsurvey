@@ -7,7 +7,7 @@
 #'
 #' @importFrom stats acf mad median qnorm quantile rnorm runif sd var setNames
 #' @importFrom stats delete.response model.frame model.matrix model.response terms coef weights
-#' @importFrom graphics plot lines points axis legend arrows grid mtext par segments
+#' @importFrom graphics plot
 #' @importFrom methods setClass setMethod new is
 #' @importFrom utils globalVariables
 #' @importFrom rlang .data
