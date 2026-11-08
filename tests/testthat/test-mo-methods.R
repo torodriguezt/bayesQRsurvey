@@ -126,21 +126,20 @@ test_that("plot draws quantile regions using the data stored in the fit", {
 
   # the response names and the data come from the object; this model has one
   # covariate plus the intercept
-  r <- plot(fit, xValue = c(1, 0), ngridpoints = 40)
-  expect_s3_class(r$plot, "ggplot")
-  expect_true(is.data.frame(r$data))
-  expect_true(all(c("tau") %in% names(r$data)))
+  r <- plot(fit, x_value = c(1, 0), grid_length = 40)
+  expect_s3_class(r, "ggplot")
+  expect_true("tau" %in% names(region_data(r)))
 
   # overriding the defaults still works
-  r2 <- plot(fit, response = c("y1", "y2"), datafile = obj$data,
-             xValue = c(1, 0), ngridpoints = 40, paintedArea = FALSE)
-  expect_s3_class(r2$plot, "ggplot")
+  r2 <- plot(fit, response = c("y2", "y1"),
+             x_value = c(1, 0), grid_length = 40, painted_area = FALSE)
+  expect_s3_class(r2, "ggplot")
 
-  # a quantile region is conditional on the covariates, so a mismatched xValue
+  # a quantile region is conditional on the covariates, so a mismatched x_value
   # is an error rather than an empty region
-  expect_error(plot(fit, ngridpoints = 40),
+  expect_error(plot(fit, grid_length = 40),
                "must give one value per covariate")
-  expect_error(plot(fit, xValue = c(1, 2, 3), ngridpoints = 40),
+  expect_error(plot(fit, x_value = c(1, 2, 3), grid_length = 40),
                "3 supplied")
 })
 

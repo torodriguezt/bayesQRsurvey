@@ -38,21 +38,22 @@ test_that("reversing responses transposes the full fitted geometry", {
     axis <- sort(unique(first))
     lo <- vapply(axis, function(v) min(second[first == v]), numeric(1))
     hi <- vapply(axis, function(v) max(second[first == v]), numeric(1))
-    expect_equal(result$data$y1, axis)
-    expect_equal(result$data$min, unname(lo))
-    expect_equal(result$data$max, unname(hi))
+    regions <- region_data(result)
+    expect_equal(regions$y1, axis)
+    expect_equal(regions$min, unname(lo))
+    expect_equal(regions$max, unname(hi))
   }
 
-  original <- plot(obj, ngridpoints = 41,
+  original <- plot(obj, grid_length = 41,
                     range_y = rbind(c(-2.1, 4.1), c(5.9, 14.1)))
-  reversed <- plot(obj, response = c("y2", "y1"), ngridpoints = 41,
+  reversed <- plot(obj, response = c("y2", "y1"), grid_length = 41,
                     range_y = rbind(c(5.9, 14.1), c(-2.1, 4.1)))
-  expect_s3_class(original$plot, "ggplot")
-  expect_s3_class(reversed$plot, "ggplot")
+  expect_s3_class(original, "ggplot")
+  expect_s3_class(reversed, "ggplot")
   check_slices(original, inside$y1, inside$y2)
   check_slices(reversed, inside$y2, inside$y1)
-  expect_equal(reversed$plot$labels$x, "y2")
-  expect_equal(reversed$plot$labels$y, "y1")
+  expect_equal(reversed$labels$x, "y2")
+  expect_equal(reversed$labels$y, "y1")
 })
 
 test_that("response selection cannot silently change the fitted responses", {
