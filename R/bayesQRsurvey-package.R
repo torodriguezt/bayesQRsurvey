@@ -58,5 +58,4 @@
 #' @useDynLib bayesQRsurvey, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
 #' @importFrom grDevices adjustcolor
-#' @importFrom graphics axis grid legend lines par points segments
 "_PACKAGE"
