@@ -30,10 +30,6 @@ The values agree with those reported by
 \code{\link[=summary.bqr.svy]{summary}}. They describe posterior uncertainty
 about where the conditional quantile lies, and are not prediction intervals
 for a new observation.
-
-\code{posterior_interval} is the generic defined in \pkg{rstantools} and
-used by \pkg{brms} and \pkg{rstanarm}, so the same call works across these
-packages.
 }
 \examples{
 \donttest{

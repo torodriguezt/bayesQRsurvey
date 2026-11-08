@@ -31,7 +31,7 @@ are not supported.}
 
 \item{method}{one of \code{"ald"}, \code{"score"} and \code{"approximate"} (default=\code{"ald"}).}
 
-\item{prior}{a \code{bqr_prior} object of class "prior". If omitted, a vague prior is assumed (see \code{\link{prior}}).}
+\item{prior}{an object of class \code{"prior"} created with \code{\link{prior}}. If omitted, a vague prior is assumed.}
 
 \item{niter}{number of MCMC draws.}
 
@@ -55,14 +55,13 @@ is used, yielding a biased estimator (a warning is issued).}
 An object of class \code{"bqr.svy"} with the components listed below.
 The components that depend on the quantile (\code{beta}, \code{draws},
 \code{diagnosis} and \code{accept_rate}) have one entry per fitted quantile,
-named \code{"tau=0.100"}, \code{"tau=0.500"} and so on, also when a single
-quantile was fitted.
+named \code{"tau="} followed by the quantile with three decimals (for
+example, \code{"tau=0.500"}).
 \item{beta}{Matrix of posterior mean estimates of the regression coefficients,
 with one row per coefficient and one column per quantile.}
 \item{draws}{Named list of posterior draw matrices, one per quantile. The
 first columns are the regression coefficients, followed by the ALD scale
-when applicable. Its column is named \code{sigma}, or a unique suffix such
-as \code{sigma.1} if that name is already a regression coefficient.}
+when applicable.}
 \item{diagnosis}{Named list of convergence diagnostics, one per quantile.}
 \item{accept_rate}{Named vector of average acceptance rates, one per quantile
 (\code{NA} for \code{method = "ald"}, which uses Gibbs sampling).}

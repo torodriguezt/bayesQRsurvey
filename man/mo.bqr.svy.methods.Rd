@@ -44,16 +44,15 @@ selects every quantile in the fit.}
 
 \item{x}{an object of class \code{"mo.bqr.svy"}.}
 
-\item{formula.}{a change to the model formula, in the form used by
-\code{\link[stats]{update}}.}
+\item{formula.}{a change to the model formula.}
 
 \item{evaluate}{logical; if \code{TRUE} (default) the updated call is
 evaluated and the new fit returned, otherwise the call itself is returned.}
 }
 \value{
-\code{coef} returns a matrix of coefficients, parameters by
-directions, for a single quantile, and a named list of such matrices
-otherwise. \code{sigma} returns the scale parameter for each direction,
+\code{coef} returns a matrix with one row per coefficient and one
+column per direction. When several quantiles are selected, it returns a
+named list with one such matrix per quantile. \code{sigma} returns the scale parameter for each direction,
 which is \code{1} throughout when \code{estimate_sigma = FALSE}. \code{nobs}
 returns the number of observations and \code{weights} the vector of survey
 weights. \code{vcov} does not return a value; it throws an error explaining
@@ -76,20 +75,20 @@ Estimation uses an EM algorithm, so a fit stores the posterior mode of the
 coefficients rather than a sample from the posterior. Unlike a fit produced
 by \code{\link{bqr.svy}}, it holds no posterior draws, and a covariance
 matrix cannot be computed from point estimates alone. \code{vcov} is
-therefore defined only to fail with a message saying so, rather than being
-left to dispatch to the default method and return something misleading. For
-the same reason no \code{posterior_interval} method is provided. Use
+therefore defined only to fail with a message saying so. For the same reason
+no \code{posterior_interval} method is provided. Use
 \code{\link{diagnostics}} to check that the algorithm converged.
 
 What the model estimates for a given covariate profile is a quantile region
 of the response space, the intersection of the half-spaces fitted along each
 direction, rather than a single value. That region is computed, drawn and
-returned by \code{\link[=plot.mo.bqr.svy]{plot}} through its \code{xValue}
+returned by \code{\link[=plot.mo.bqr.svy]{plot}} through its \code{x_value}
 argument.
 
-\code{formula}, \code{terms} and \code{model.matrix} recover the model
-specification, \code{weights} returns the survey weights as supplied, and
-\code{update} refits the model with part of the call changed.
+\code{formula}, \code{terms} and \code{model.matrix} return the formula,
+terms and design matrix of the fit, and \code{weights} the survey weights
+as supplied, without normalisation. \code{update} refits the model with
+modified arguments.
 }
 \examples{
 \donttest{

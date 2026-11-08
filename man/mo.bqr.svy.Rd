@@ -31,7 +31,7 @@ Missing values must be removed or imputed before fitting.}
 
 \item{quantile}{numerical scalar or vector containing quantile(s) of interest (default=0.5).}
 
-\item{prior}{a \code{bqr_prior} object of class "prior". If omitted, a vague prior is assumed (see \code{\link{prior}}).}
+\item{prior}{an object of class \code{"prior"} created with \code{\link{prior}}. If omitted, a vague prior is assumed.}
 
 \item{U}{an optional \eqn{d \times K}-matrix of directions, where \eqn{d} indicates the response variable dimension
 and \eqn{K} indicates indicates the number of directions.}

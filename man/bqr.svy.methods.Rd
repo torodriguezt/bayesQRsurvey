@@ -54,8 +54,7 @@ covariance matrix returned by \code{vcov}. Default \code{4}.}
 \item{include_sigma}{logical; whether to keep the scale parameter column in
 the returned draws. Defaults to whether the model estimated it.}
 
-\item{formula.}{a change to the model formula, in the form used by
-\code{\link[stats]{update}}.}
+\item{formula.}{a change to the model formula.}
 
 \item{evaluate}{logical; if \code{TRUE} (default) the updated call is
 evaluated and the new fit returned, otherwise the call itself is returned.}
@@ -99,10 +98,10 @@ exactly \code{1} when \code{"ald"} holds it fixed, and \code{NA} for the
 \code{"score"} and \code{"approximate"} methods, which have no scale
 parameter.
 
-\code{formula} returns the formula as supplied, \code{terms} its terms
-object, and \code{model.matrix} the design matrix the fit was built on.
-\code{weights} returns the survey weights as supplied, without
-normalisation. \code{update} refits the model with part of the call changed.
+\code{formula}, \code{terms} and \code{model.matrix} return the formula,
+terms and design matrix of the fit, and \code{weights} the survey weights
+as supplied, without normalisation. \code{update} refits the model with
+modified arguments.
 
 These are point summaries, evaluated at the posterior mean. The posterior
 credible intervals of the coefficients are computed by

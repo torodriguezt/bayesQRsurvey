@@ -6,20 +6,14 @@
 \usage{
 \method{plot}{mo.bqr.svy}(
   x,
-  y = NULL,
   response = NULL,
-  datafile = NULL,
-  ngridpoints = 200,
-  xValue = 1,
-  paintedArea = TRUE,
+  grid_length = 200,
+  x_value = 1,
+  painted_area = TRUE,
   range_y = NULL,
   main = NULL,
   color_palette = c("default", "grey"),
   theme_style = c("minimal", "none"),
-  point_alpha = 0.3,
-  point_size = 1.2,
-  line_size = 0.8,
-  verbose = FALSE,
   ...
 )
 }
@@ -27,23 +21,18 @@
 \item{x}{An object of class \code{"mo.bqr.svy"} produced by
 \code{\link{mo.bqr.svy}}.}
 
-\item{y}{Ignored (S3 signature).}
-
 \item{response}{Optional character vector of length 2 giving the names of the
 fitted response columns, in the desired axis order. Defaults to the order
 used to fit the model; the two names may be reversed.}
 
-\item{datafile}{Optional data frame containing at least the two columns named
-in \code{response}. Defaults to the data stored in the fit.}
-
-\item{ngridpoints}{Integer; number of grid points per axis
+\item{grid_length}{Integer; number of grid points per axis
 (default = 200).}
 
-\item{xValue}{Numeric vector of covariate values at which to evaluate the
+\item{x_value}{Numeric vector of covariate values at which to evaluate the
 regression, one per design-matrix column and in that order. For an
-intercept-only model use \code{xValue = 1} (the default).}
+intercept-only model use \code{x_value = 1} (the default).}
 
-\item{paintedArea}{Logical; if \code{TRUE} (default) the regions are
+\item{painted_area}{Logical; if \code{TRUE} (default) the regions are
 drawn as filled ribbons (see Details).}
 
 \item{range_y}{An optional \eqn{2 \times 2} matrix whose rows give
@@ -62,24 +51,11 @@ regions run from light (outer) to dark (inner).}
 \code{"none"}, which applies no theme so the plot honours the active
 \code{theme_set()}.}
 
-\item{point_alpha}{Numeric in \code{[0, 1]}; transparency for the
-observed-data point cloud (default = 0.3).}
-
-\item{point_size}{Numeric; size of the data points (default = 1.2).}
-
-\item{line_size}{Numeric; line width for contour outlines
-(default = 0.8).}
-
-\item{verbose}{Logical; if \code{TRUE}, print per-quantile progress
-messages (default = \code{FALSE}).}
-
-\item{...}{Not used.}
+\item{...}{not used; any argument passed here is an error.}
 }
 \value{
-Invisibly, a list with the components listed below.
-\item{plot}{A \code{ggplot} object.}
-\item{data}{A data frame with columns \code{y1}, \code{min},
-\code{max} and \code{tau}, one block per quantile level.}
+A ggplot object. If no quantile region can be computed, a warning is
+given and \code{NULL} is returned invisibly.
 }
 \description{
 Draws quantile regions from a \code{mo.bqr.svy} model fitted with exactly two
@@ -87,19 +63,17 @@ response variables. Models with other response dimensions cannot be plotted. The
 method projects the data onto a grid, determines which points lie inside each
 quantile region, and visualises the result using \pkg{ggplot2}.
 
-The response names and the data are taken from the fitted object, so neither
-has to be supplied again; \code{response} and \code{datafile} are only needed
-to override them. A quantile region is conditional on the covariates, so
-\code{xValue} must give the covariate profile at which to draw it, one value
-per design-matrix column.
+The response names and the data are taken from the fitted object. A quantile
+region is conditional on the covariates, so \code{x_value} must give the
+covariate profile at which to draw it, one value per design-matrix column.
 }
 \details{
 Two display modes are available.
 \itemize{
-\item \code{paintedArea = TRUE} (default) draws filled regions with
+\item \code{painted_area = TRUE} (default) draws filled regions with
 contour outlines, one per quantile magnitude, from the outermost
 (smallest \eqn{\tau}) to the innermost.
-\item \code{paintedArea = FALSE} draws contour lines only, distinguished
+\item \code{painted_area = FALSE} draws contour lines only, distinguished
 by colour and linetype.
 }
 In both modes the quantile levels are identified through a standard
@@ -137,11 +111,11 @@ fit <- mo.bqr.svy(
 
 # --- Plot quantile regions (filled ribbons) ---
 # the responses and the data come from the fit; the model is intercept-only,
-# so the default xValue = 1 is the right covariate profile
+# so the default x_value = 1 is the right covariate profile
 plot(fit)
 
 # Contour-only style
-plot(fit, paintedArea = FALSE)
+plot(fit, painted_area = FALSE)
 }
 
 }

@@ -6,7 +6,6 @@
 \usage{
 \method{plot}{bqr.svy}(
   x,
-  y = NULL,
   type = c("fit", "quantile", "trace", "density"),
   tau = NULL,
   which = NULL,
@@ -16,95 +15,67 @@
   ci_probs = c(0.025, 0.975),
   at = NULL,
   grid_length = 200,
-  points_alpha = 0.4,
-  point_size = 2.5,
-  line_size = 1.2,
   main = NULL,
-  use_ggplot = TRUE,
-  theme_style = c("minimal", "classic", "bw", "light", "none"),
+  theme_style = c("minimal", "none"),
   color_palette = c("viridis", "plasma", "set2", "dark2", "grey", "none"),
   add_h0 = FALSE,
   add_ols = FALSE,
-  ols_fit = NULL,
   ols_weights = NULL,
   ...
 )
 }
 \arguments{
-\item{x}{Object of class \code{bqr.svy}.}
+\item{x}{an object of class \code{"bqr.svy"}.}
 
-\item{y}{Ignored (S3 signature).}
+\item{type}{one of \code{"fit"}, \code{"quantile"}, \code{"trace"} or
+\code{"density"} (see Details).}
 
-\item{type}{One of \code{"fit"}, \code{"quantile"}, \code{"trace"},
-\code{"density"}.}
+\item{tau}{quantile(s) to plot, among those fitted. If \code{NULL}, all
+fitted quantiles are used.}
 
-\item{tau}{Quantile(s) to plot; must appear in \code{x$quantile}. If
-\code{NULL}, all available are used.}
+\item{which}{what to display. For \code{type = "fit"}, the name of the
+numeric predictor on the horizontal axis, by default the first one in the
+model. For the other types, coefficient names or indices, by default the
+first coefficient for \code{"quantile"} and all of them for
+\code{"trace"} and \code{"density"}.}
 
-\item{which}{Variable name(s) or coefficient index(es) to display.
-For \code{type = "fit"}, the name of a numeric predictor to plot on the
-x-axis (if \code{NULL}, the first numeric predictor is used).
-For \code{type = "quantile"}, a character vector of coefficient names
-or integer vector of indices; when more than one is given the plot uses
-\code{facet_wrap} to show all coefficients in a single figure.
-For \code{type = "trace"} and \code{type = "density"}, a character vector
-of coefficient names or integer vector of indices; when \code{NULL} (the
-default) all coefficients are shown, and when more than one is selected the
-panels are arranged with \code{facet_wrap}.}
+\item{add_points}{logical; overlay the observed data on the fitted curves.}
 
-\item{add_points}{(fit) Logical; overlay observed data points.}
+\item{combine}{logical; with several quantiles, draw the fitted curves in one
+panel (\code{TRUE}) or in one panel per quantile (\code{FALSE}).}
 
-\item{combine}{(fit) Logical; with several \code{tau}, \code{TRUE} overlays
-the curves in one panel and \code{FALSE} uses one panel per quantile.}
+\item{show_ci}{logical; add credible bands to the fitted curves.}
 
-\item{show_ci}{(fit) Logical; draw credible bands.}
+\item{ci_probs}{lower and upper probabilities of the credible intervals
+drawn in the plots. Default \code{c(0.025, 0.975)}.}
 
-\item{ci_probs}{Length-2 numeric vector with the lower/upper probabilities of
-the credible interval shown by the fit ribbon, the density plot bounds, and
-the quantile-process band. Default \code{c(0.025, 0.975)} (95\%).}
+\item{at}{named list of values for the covariates not on the horizontal axis
+of the fit plot, for example \code{list(sex = "Girls")}. Covariates not
+listed are held at their median, or at their first level for factors.}
 
-\item{at}{(fit) Named list of fixed values for non-plotted
-covariates (see Details).}
+\item{grid_length}{number of predictor values at which the fitted curves are
+evaluated.}
 
-\item{grid_length}{(fit) Integer; number of points in the predictor grid.}
+\item{main}{optional plot title.}
 
-\item{points_alpha}{(fit) Point transparency in \code{[0,1]}.}
+\item{theme_style}{\code{"minimal"} (default) or \code{"none"}. With
+\code{"none"} no theme is applied, so the active \code{theme_set()} is used.}
 
-\item{point_size}{(fit) Point size.}
+\item{color_palette}{one of \code{"viridis"}, \code{"plasma"},
+\code{"set2"}, \code{"dark2"}, \code{"grey"} for greyscale printing, or
+\code{"none"} to leave the colour scale to the user.}
 
-\item{line_size}{(fit/quantile) Line width for fitted/summary lines.}
+\item{add_h0}{logical; add a horizontal line at zero to the quantile plot.}
 
-\item{main}{Optional main title.}
+\item{add_ols}{logical; add the least-squares estimate to the quantile plot.}
 
-\item{use_ggplot}{Logical; if \code{TRUE}, return a ggplot object.}
+\item{ols_weights}{optional weights for the least-squares fit drawn by
+\code{add_ols}, one per observation. By default the fit is unweighted.}
 
-\item{theme_style}{(ggplot) One of \code{"minimal"}, \code{"classic"},
-\code{"bw"}, \code{"light"}, or \code{"none"}. With \code{"none"} the plot
-applies no theme and therefore honours the active \code{theme_set()}.}
-
-\item{color_palette}{(ggplot) One of \code{"viridis"}, \code{"plasma"},
-\code{"set2"}, \code{"dark2"}, \code{"grey"} for a print-friendly greyscale
-rendering (also switches the single-colour accents used by the trace,
-density, and quantile plots to greys), or \code{"none"} to add no colour
-scale so a user-supplied \code{scale_colour_*()} controls the mapping.}
-
-\item{add_h0}{(quantile) Logical; add a horizontal reference at \eqn{y = 0}.}
-
-\item{add_ols}{(quantile) Logical; add the OLS estimate (dotted line) for the
-selected coefficient.}
-
-\item{ols_fit}{(quantile) Optional precomputed \code{lm} object; if
-\code{NULL}, an \code{lm()} is fitted internally using \code{x$model} and
-\code{x$terms}.}
-
-\item{ols_weights}{(quantile) Optional numeric vector of weights when fitting
-OLS internally (length must match \code{nrow(x$model)}).}
-
-\item{...}{Not used.}
+\item{...}{not used; any argument passed here is an error.}
 }
 \value{
-\code{invisible(NULL)} for base R graphics, or a ggplot object if
-\code{use_ggplot = TRUE}.
+A ggplot object.
 }
 \description{
 Plot method for objects of class \code{bqr.svy} produced by \code{bqr.svy()}.
@@ -114,36 +85,12 @@ MCMC trace plots, and posterior densities.
 \details{
 The \code{type} argument selects one of four displays.
 \itemize{
-\item \code{type = "fit"} draws the fitted quantile curves versus a single
-numeric predictor (selected via \code{which}). Optionally overlay
-observed points and credible bands. Other covariates can be held
-fixed via \code{at}.
-\item \code{type = "quantile"} draws a single coefficient as a function
-of the quantile \eqn{\tau}. Optionally add a reference line at 0 and
-the corresponding OLS estimate.
-\item \code{type = "trace"} draws MCMC traces at a chosen \eqn{\tau}. One
-or several coefficients may be selected via \code{which}; when more
-than one is shown the panels are arranged with \code{facet_wrap}.
-\item \code{type = "density"} draws posterior densities at a chosen
-\eqn{\tau}, faceted over the selected coefficients as for
-\code{type = "trace"}.
-}
-
-Additional details on the arguments.
-\itemize{
-\item \code{tau} must be included in \code{x$quantile}. If \code{NULL}, all
-available quantiles in the object are used.
-\item For \code{type = "fit"}, \code{which} must name a numeric column in
-the original model. If \code{NULL}, the first numeric predictor
-(different from the response) is chosen automatically.
-\item For \code{type = "fit"}, \code{at} is a named list
-(\code{list(var = value, ...)}) used to fix other covariates while
-plotting versus the selected predictor. Provide valid levels for
-factors.
-\item When \code{use_ggplot = TRUE}, a ggplot object is returned and the
-appearance is controlled by \code{theme_style} and
-\code{color_palette}. Otherwise, base graphics are used and the
-function returns \code{invisible(NULL)}.
+\item \code{"fit"} draws the fitted quantile curves against a numeric
+predictor, optionally with the observed data and credible bands.
+\item \code{"quantile"} draws one or more coefficients as functions of
+the quantile \eqn{\tau}, with a credible band.
+\item \code{"trace"} draws the MCMC traces at one quantile.
+\item \code{"density"} draws the posterior densities at one quantile.
 }
 }
 \examples{
