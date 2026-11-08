@@ -65,7 +65,7 @@
 #' styling follow the active theme.
 #'
 #' The quantile regions are built from the directional approach described in
-#' Nascimento & \enc{Gonçalves}{Goncalves} (2025).  For each quantile
+#' Nascimento & \enc{Gonçalves}{Goncalves} (2026). For each quantile
 #' \eqn{\tau}, the function evaluates every grid point against the
 #' half-space constraints defined by the fitted directions and orthogonal
 #' bases.
@@ -98,6 +98,12 @@
 #'
 #' @return A ggplot object. If no quantile region can be computed, a warning is
 #'    given and \code{NULL} is returned invisibly.
+#'
+#' @references
+#' Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2026).
+#' A Bayesian Approach to Multiple-Output Quantile Regression Analysis Under Informative Sampling.
+#' \emph{Journal of Survey Statistics and Methodology}, 14(4), 1070-1098.
+#' \doi{10.1093/jssam/smaf040}
 #'
 #' @examples
 #' \donttest{

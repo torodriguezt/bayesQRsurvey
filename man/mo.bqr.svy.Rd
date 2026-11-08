@@ -143,8 +143,8 @@ fit2 <- mo.bqr.svy(
 
 }
 \references{
-Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2024).
-Bayesian Quantile Regression Models for Complex Survey Data Under Informative Sampling.
-\emph{Journal of Survey Statistics and Methodology}, 12(4), 1105-1130.
-\doi{10.1093/jssam/smae015}
+Nascimento, M. L. & \enc{Gonçalves}{Goncalves}, K. C. M. (2026).
+A Bayesian Approach to Multiple-Output Quantile Regression Analysis Under Informative Sampling.
+\emph{Journal of Survey Statistics and Methodology}, 14(4), 1070-1098.
+\doi{10.1093/jssam/smaf040}
 }
