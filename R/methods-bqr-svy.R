@@ -37,10 +37,10 @@
 #' \code{"score"} and \code{"approximate"} methods, which have no scale
 #' parameter.
 #'
-#' \code{formula} returns the formula as supplied, \code{terms} its terms
-#' object, and \code{model.matrix} the design matrix the fit was built on.
-#' \code{weights} returns the survey weights as supplied, without
-#' normalisation. \code{update} refits the model with part of the call changed.
+#' \code{formula}, \code{terms} and \code{model.matrix} return the formula,
+#' terms and design matrix of the fit, and \code{weights} the survey weights
+#' as supplied, without normalisation. \code{update} refits the model with
+#' modified arguments.
 #'
 #' These are point summaries, evaluated at the posterior mean. The posterior
 #' credible intervals of the coefficients are computed by
@@ -53,8 +53,7 @@
 #'   the returned draws. Defaults to whether the model estimated it.
 #' @param digits integer; number of decimal places used when printing the
 #'   covariance matrix returned by \code{vcov}. Default \code{4}.
-#' @param formula. a change to the model formula, in the form used by
-#'   \code{\link[stats]{update}}.
+#' @param formula. a change to the model formula.
 #' @param evaluate logical; if \code{TRUE} (default) the updated call is
 #'   evaluated and the new fit returned, otherwise the call itself is returned.
 #' @param ... further arguments passed to or from other methods.
